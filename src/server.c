@@ -7,41 +7,54 @@
 #include <netdb.h>
 #include <stdio.h>
 
-#define PORT 4000
+#include "shared.h"
 
 int main(int argc, char *argv[])
 {
-	int sockfd, n;
-	socklen_t clilen;
-	struct sockaddr_in serv_addr, cli_addr;
-	char buf[256];
-		
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) 
+	int socket_descriptor, number_of_bytes;
+	socklen_t client_address_struct_size;
+	struct sockaddr_in server_address, client_address;
+	char buffer[BUFFER_SIZE];
+
+	socket_descriptor = socket(AF_INET, SOCK_DGRAM, DEFAULT_PROTOCOL);
+	if (socket_descriptor == ERROR_VALUE)
 		printf("ERROR opening socket");
 
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(PORT);
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	bzero(&(serv_addr.sin_zero), 8);    
-	 
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr)) < 0) 
+	server_address.sin_family = AF_INET;
+	server_address.sin_port = htons(PORT);
+	server_address.sin_addr.s_addr = INADDR_ANY;
+	bzero(&(server_address.sin_zero), sizeof(server_address.sin_zero));
+
+	if (bind(socket_descriptor, (struct sockaddr *)&server_address, sizeof(struct sockaddr)) < 0)
 		printf("ERROR on binding");
-	
-	clilen = sizeof(struct sockaddr_in);
-	
-	while (1) {
+
+	client_address_struct_size = sizeof(struct sockaddr_in);
+
+	while (TRUE)
+	{
 		/* receive from socket */
-		n = recvfrom(sockfd, buf, 256, 0, (struct sockaddr *) &cli_addr, &clilen);
-		if (n < 0) 
+		number_of_bytes = recvfrom(
+			socket_descriptor,
+			buffer,
+			BUFFER_SIZE,
+			NONE,
+			(struct sockaddr *)&client_address,
+			&client_address_struct_size);
+		if (number_of_bytes < 0)
 			printf("ERROR on recvfrom");
-		printf("Received a datagram: %s\n", buf);
-		
+		printf("Received a datagram: %s\n", buffer);
+
 		/* send to socket */
-		n = sendto(sockfd, "Got your message\n", 17, 0,(struct sockaddr *) &cli_addr, sizeof(struct sockaddr));
-		if (n  < 0) 
+		number_of_bytes = sendto(
+			socket_descriptor,
+			"Got your message\n",
+			17, // Size of message
+			NONE,
+			(struct sockaddr *)&client_address, sizeof(struct sockaddr));
+		if (number_of_bytes < 0)
 			printf("ERROR on sendto");
 	}
-	
-	close(sockfd);
+
+	close(socket_descriptor);
 	return 0;
 }
