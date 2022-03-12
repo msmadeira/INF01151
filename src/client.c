@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 		NONE,
 		(const struct sockaddr *)&server_address,
 		size_of_message);
+
 	if (number_of_bytes < 0)
 		printf("ERROR sendto");
 
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
 		(struct sockaddr *)&from,
 		&size_of_message);
 	if (number_of_bytes < 0)
-		printf("ERROR recvfrom");
+		printf("ERROR recvfrom.");
 
 	printf("Got an ack: %s\n", buffer);
 
