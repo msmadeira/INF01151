@@ -598,6 +598,6 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,visualstudio,intellij,c++,c
 
-client
-server
+app_cliente
+app_servidor
 .vscode
