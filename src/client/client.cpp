@@ -1,3 +1,4 @@
+// C
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,7 +9,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "shared.h"
+#include "../shared/shared.h"
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
