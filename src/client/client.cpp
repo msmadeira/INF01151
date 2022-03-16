@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   server_address.sin_addr = *((struct in_addr *)server->h_addr);
   bzero(&(server_address.sin_zero), sizeof(server_address.sin_zero));
 
-  printf("Enter the message: ");
+  printf("Please type your username: ");
   bzero(buffer, BUFFER_SIZE);
   fgets(buffer, BUFFER_SIZE, stdin);
 
@@ -57,16 +57,33 @@ int main(int argc, char *argv[])
   if (number_of_bytes < 0)
     printf("ERROR sendto");
 
-  number_of_bytes = recvfrom(
-      socket_descriptor, buffer,
-      BUFFER_SIZE,
-      NONE,
-      (struct sockaddr *)&from,
-      &size_of_message);
-  if (number_of_bytes < 0)
-    printf("ERROR recvfrom");
+  while (TRUE)
+  {
+    printf("Enter the message: ");
+    bzero(buffer, BUFFER_SIZE);
+    fgets(buffer, BUFFER_SIZE, stdin);
 
-  printf("Got an ack: %s\n", buffer);
+    number_of_bytes = sendto(
+        socket_descriptor,
+        buffer,
+        strlen(buffer),
+        NONE,
+        (const struct sockaddr *)&server_address,
+        size_of_message);
+    if (number_of_bytes < 0)
+      printf("ERROR sendto");
+
+    number_of_bytes = recvfrom(
+        socket_descriptor, buffer,
+        BUFFER_SIZE,
+        NONE,
+        (struct sockaddr *)&from,
+        &size_of_message);
+    if (number_of_bytes < 0)
+      printf("ERROR recvfrom");
+
+    printf("Got an ack: %s\n", buffer);
+  }
 
   close(socket_descriptor);
   return 0;

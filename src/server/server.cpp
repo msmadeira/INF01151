@@ -33,6 +33,18 @@ int main(int argc, char *argv[])
 
   client_address_struct_size = sizeof(struct sockaddr_in);
 
+  /* receive from socket */
+  number_of_bytes = recvfrom(
+      socket_descriptor,
+      buffer,
+      BUFFER_SIZE,
+      NONE,
+      (struct sockaddr *)&client_address,
+      &client_address_struct_size);
+  if (number_of_bytes < 0)
+    printf("ERROR on recvfrom");
+  printf("Received a datagram: %s\n", buffer);
+
   while (TRUE)
   {
     /* receive from socket */
