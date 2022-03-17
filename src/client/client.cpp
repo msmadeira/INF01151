@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <string.h>
 
+// libs
+#include "../libs/jsoncpp/json/json.h"
+
 #include "../shared/shared.h"
 
 using namespace std;
@@ -43,14 +46,25 @@ int main(int argc, char *argv[])
   server_address.sin_addr = *((struct in_addr *)server->h_addr);
   bzero(&(server_address.sin_zero), sizeof(server_address.sin_zero));
 
+
+  // TODO: Extract login to its own separate function
   printf("Please type your username: ");
   bzero(buffer, BUFFER_SIZE);
   fgets(buffer, BUFFER_SIZE, stdin);
 
+  Json::FastWriter fastWriter;
+  Json::Value loginMessage;
+
+  loginMessage["type"] = MsgType::Follow;
+  loginMessage["id"] = 1;
+  loginMessage["username"] = buffer;
+
+  string json = fastWriter.write(loginMessage);
+
   number_of_bytes = sendto(
       socket_descriptor,
-      buffer,
-      strlen(buffer),
+      json.c_str(),
+      json.length(),
       NONE,
       (const struct sockaddr *)&server_address,
       size_of_message);

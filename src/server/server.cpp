@@ -8,9 +8,14 @@
 #include <netdb.h>
 #include <stdio.h>
 
+// libs
+#include "../libs/jsoncpp/json/json.h"
+
 #include "../shared/shared.h"
 
 using namespace std;
+
+int generateMessageId();
 
 int main(int argc, char *argv[])
 {
@@ -43,10 +48,26 @@ int main(int argc, char *argv[])
       &client_address_struct_size);
   if (number_of_bytes < 0)
     printf("ERROR on recvfrom");
-  printf("Received a datagram: %s\n", buffer);
+  
+  // TODO: Extract login to its own separate function
+  Json::Reader reader;
+  Json::Value messageValue;
+
+  bool parseSuccess = reader.parse(buffer, messageValue, false);
+
+  if (parseSuccess)
+    printf("ERROR parsing message");
+  
+  struct ClientMsg loginMessage;
+  loginMessage.id = generateMessageId();
+  strcpy(loginMessage.payload.username, messageValue["username"].asCString()); // TODO: remove \n from end of string
+  loginMessage.type = static_cast<MsgType>(messageValue["type"].asInt());
+
+  printf("Received JSON: %s\n", buffer);
 
   while (TRUE)
   {
+    // TODO: should empty buffer after first message received (to remove trash)
     /* receive from socket */
     number_of_bytes = recvfrom(
         socket_descriptor,
@@ -72,4 +93,8 @@ int main(int argc, char *argv[])
 
   close(socket_descriptor);
   return 0;
+}
+
+int generateMessageId() {
+  return 1; // TODO: Implement message id generator (maybe extract to a generators class)
 }

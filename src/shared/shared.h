@@ -24,27 +24,17 @@ enum MsgType
   ConfirmMessageReceived
 };
 
-typedef struct MsgId
-{
-  int id;
-} msgId;
-
-typedef struct TweetId
-{
-  int id;
-} tweetId;
-
 union ClientMsgPayload
 {
-  char username[];
-  char message[];
-  TweetId last_tweet;
-  MsgId id;
+  char username[20];
+  char message[140];
+  int last_tweet;
+  int id;
 };
 
 typedef struct ClientMsg
 {
   MsgType type;
-  MsgId id;
+  int id;
   ClientMsgPayload payload;
 } clientMsg;
