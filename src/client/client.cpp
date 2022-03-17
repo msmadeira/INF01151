@@ -12,40 +12,65 @@
 // libs
 #include "../libs/jsoncpp/json/json.h"
 
+// C++
+#include <iostream>
+
 #include "../shared/shared.h"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  int socket_descriptor, number_of_bytes;
-  unsigned int size_of_message = sizeof(struct sockaddr_in);
-  struct sockaddr_in server_address, from;
-  struct hostent *server;
+  int number_of_bytes;
 
-  char buffer[BUFFER_SIZE];
-  if (argc < 2)
-  {
-    fprintf(stderr, "usage %s hostname\n", argv[0]);
-    exit(0);
-  }
+	char buffer[BUFFER_SIZE];
+	if (argc < 2)
+	{
+		fprintf(stderr, "usage %s hostname\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
 
-  server = gethostbyname(argv[1]);
-  if (server == NULL)
-  {
-    fprintf(stderr, "ERROR, no such host\n");
-    exit(0);
-  }
+	struct addrinfo hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
+	hints.ai_flags = NONE;			/* For wildcard IP address */
+	hints.ai_protocol = DEFAULT_PROTOCOL;
+	hints.ai_canonname = NULL;
+	hints.ai_addr = NULL;
+	hints.ai_next = NULL;
 
-  socket_descriptor = socket(AF_INET, SOCK_DGRAM, DEFAULT_PROTOCOL);
-  if (socket_descriptor == ERROR_VALUE)
-    printf("ERROR opening socket");
+	struct addrinfo *address_candidates;
+	int exit_code = getaddrinfo(argv[1], PORT_STR, &hints, &address_candidates);
+	if (exit_code != 0)
+	{
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(exit_code));
+		exit(EXIT_FAILURE);
+	}
 
-  server_address.sin_family = AF_INET;
-  server_address.sin_port = htons(PORT);
-  server_address.sin_addr = *((struct in_addr *)server->h_addr);
-  bzero(&(server_address.sin_zero), sizeof(server_address.sin_zero));
+	struct addrinfo *server_address;
+	int socket_descriptor;
+	for (server_address = address_candidates; server_address != NULL; server_address = server_address->ai_next)
+	{
+		socket_descriptor = socket(
+			server_address->ai_family,
+			server_address->ai_socktype,
+			server_address->ai_protocol);
+		if (socket_descriptor == -1)
+			continue;
 
+		if (connect(socket_descriptor, server_address->ai_addr, server_address->ai_addrlen) != -1)
+			break; /* Success */
+
+		close(socket_descriptor);
+	}
+	freeaddrinfo(address_candidates);
+
+	if (server_address == NULL)
+	{ /* No address succeeded */
+		fprintf(stderr, "Could not bind\n");
+		exit(EXIT_FAILURE);
+	}
 
   // TODO: Extract login to its own separate function
   printf("Please type your username: ");
@@ -61,44 +86,31 @@ int main(int argc, char *argv[])
 
   string json = fastWriter.write(loginMessage);
 
-  number_of_bytes = sendto(
-      socket_descriptor,
-      json.c_str(),
-      json.length(),
-      NONE,
-      (const struct sockaddr *)&server_address,
-      size_of_message);
-  if (number_of_bytes < 0)
-    printf("ERROR sendto");
+  number_of_bytes = write(socket_descriptor, json.c_str(), strlen(json.c_str()));
 
   while (TRUE)
   {
-    printf("Enter the message: ");
-    bzero(buffer, BUFFER_SIZE);
-    fgets(buffer, BUFFER_SIZE, stdin);
+      printf("Enter the message: ");
+      bzero(buffer, BUFFER_SIZE);
+      fgets(buffer, BUFFER_SIZE, stdin);
 
-    number_of_bytes = sendto(
-        socket_descriptor,
-        buffer,
-        strlen(buffer),
-        NONE,
-        (const struct sockaddr *)&server_address,
-        size_of_message);
-    if (number_of_bytes < 0)
-      printf("ERROR sendto");
+      number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
+      if (number_of_bytes != strlen(buffer))
+      {
+          fprintf(stderr, "partial/failed write\n");
+          exit(EXIT_FAILURE);
+      }
 
-    number_of_bytes = recvfrom(
-        socket_descriptor, buffer,
-        BUFFER_SIZE,
-        NONE,
-        (struct sockaddr *)&from,
-        &size_of_message);
-    if (number_of_bytes < 0)
-      printf("ERROR recvfrom");
+      number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
+      if (number_of_bytes == -1)
+      {
+          perror("read");
+          exit(EXIT_FAILURE);
+      }
 
-    printf("Got an ack: %s\n", buffer);
+      printf("Received %d bytes: %s\n", number_of_bytes, buffer);
   }
 
-  close(socket_descriptor);
-  return 0;
+	close(socket_descriptor);
+	return 0;
 }

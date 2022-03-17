@@ -12,6 +12,7 @@
 #define DEFAULT_PROTOCOL 0
 
 #define PORT 4000
+#define PORT_STR "4000"
 #define BUFFER_SIZE 256
 
 // Data Definitions
