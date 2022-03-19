@@ -63,32 +63,33 @@ int main(int argc, char *argv[])
 	struct sockaddr_in client_address;
 	socklen_t client_address_struct_size = sizeof(struct sockaddr_storage);
 
-  int number_of_bytes = recvfrom(
-			socket_descriptor,
-			buffer,
-			BUFFER_SIZE,
-			NONE,
-			(struct sockaddr *)&client_address,
-			&client_address_struct_size);
-		if (number_of_bytes < 0)
-			printf("ERROR on recvfrom");
+	int number_of_bytes = recvfrom(
+		socket_descriptor,
+		buffer,
+		BUFFER_SIZE,
+		NONE,
+		(struct sockaddr *)&client_address,
+		&client_address_struct_size);
 
-  // TODO: Extract login to its own separate function
-  Json::Reader reader;
-  Json::Value messageValue;
+	if (number_of_bytes < 0)
+		printf("ERROR on recvfrom");
 
-  bool parseSuccess = reader.parse(buffer, messageValue, false);
+  	// TODO: Extract login to its own separate function
+	Json::Reader reader;
+	Json::Value messageValue;
 
-  if (!parseSuccess) {
-    printf("ERROR parsing message");
-  }
+  	bool parseSuccess = reader.parse(buffer, messageValue, false);
 
-  struct ClientMsg loginMessage;
-  loginMessage.id = generateMessageId();
-  strcpy(loginMessage.payload.username, messageValue["username"].asCString()); // TODO: remove \n from end of string
-  loginMessage.type = static_cast<MsgType>(messageValue["type"].asInt());
+	if (!parseSuccess) {
+    	printf("ERROR parsing message");
+	}
 
-  printf("Received JSON: %s\n", buffer);
+	struct ClientMsg loginMessage;
+	loginMessage.id = generateMessageId();
+	strcpy(loginMessage.payload.username, messageValue["username"].asCString()); // TODO: remove \n from end of string
+	loginMessage.type = static_cast<MsgType>(messageValue["type"].asInt());
+
+	printf("Received JSON: %s\n", buffer);
 
 	for (;;)
 	{

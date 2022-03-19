@@ -72,44 +72,44 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-  // TODO: Extract login to its own separate function
-  printf("Please type your username: ");
-  bzero(buffer, BUFFER_SIZE);
-  fgets(buffer, BUFFER_SIZE, stdin);
+ 	// TODO: Extract login to its own separate function
+	printf("Please type your username: ");
+	bzero(buffer, BUFFER_SIZE);
+	fgets(buffer, BUFFER_SIZE, stdin);
 
-  Json::FastWriter fastWriter;
-  Json::Value loginMessage;
+	Json::FastWriter fastWriter;
+	Json::Value loginMessage;
 
-  loginMessage["type"] = MsgType::Follow;
-  loginMessage["id"] = 1;
-  loginMessage["username"] = buffer;
+	loginMessage["type"] = MsgType::Follow;
+	loginMessage["id"] = 1;
+	loginMessage["username"] = buffer;
 
-  string json = fastWriter.write(loginMessage);
+	string json = fastWriter.write(loginMessage);
 
-  number_of_bytes = write(socket_descriptor, json.c_str(), strlen(json.c_str()));
+	number_of_bytes = write(socket_descriptor, json.c_str(), strlen(json.c_str()));
 
-  while (TRUE)
-  {
-      printf("Enter the message: ");
-      bzero(buffer, BUFFER_SIZE);
-      fgets(buffer, BUFFER_SIZE, stdin);
+  	while (TRUE)
+  	{
+    	printf("Enter the message: ");
+    	bzero(buffer, BUFFER_SIZE);
+    	fgets(buffer, BUFFER_SIZE, stdin);
 
-      number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
-      if (number_of_bytes != strlen(buffer))
-      {
-          fprintf(stderr, "partial/failed write\n");
-          exit(EXIT_FAILURE);
-      }
+    	number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
+    	if (number_of_bytes != strlen(buffer))
+      	{
+        	fprintf(stderr, "partial/failed write\n");
+        	exit(EXIT_FAILURE);
+    	}
 
-      number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
-      if (number_of_bytes == -1)
-      {
-          perror("read");
-          exit(EXIT_FAILURE);
-      }
+    	number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
+    	if (number_of_bytes == -1)
+      	{
+        	perror("read");
+        	exit(EXIT_FAILURE);
+      	}
 
-      printf("Received %d bytes: %s\n", number_of_bytes, buffer);
-  }
+    	printf("Received %d bytes: %s\n", number_of_bytes, buffer);
+  	}
 
 	close(socket_descriptor);
 	return 0;
