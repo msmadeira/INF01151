@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <string.h>
 
+// libs
+#include "../libs/jsoncpp/json/json.h"
+
 // C++
 #include <iostream>
 
@@ -18,6 +21,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+  int number_of_bytes;
+
 	char buffer[BUFFER_SIZE];
 	if (argc < 2)
 	{
@@ -67,25 +72,44 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Enter the message: ");
+ 	// TODO: Extract login to its own separate function
+	printf("Please type your username: ");
 	bzero(buffer, BUFFER_SIZE);
 	fgets(buffer, BUFFER_SIZE, stdin);
 
-	int number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
-	if (number_of_bytes != strlen(buffer))
-	{
-		fprintf(stderr, "partial/failed write\n");
-		exit(EXIT_FAILURE);
-	}
+	Json::FastWriter fastWriter;
+	Json::Value loginMessage;
 
-	number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
-	if (number_of_bytes == -1)
-	{
-		perror("read");
-		exit(EXIT_FAILURE);
-	}
+	loginMessage["type"] = MsgType::Follow;
+	loginMessage["id"] = 1;
+	loginMessage["username"] = buffer;
 
-	printf("Received %d bytes: %s\n", number_of_bytes, buffer);
+	string json = fastWriter.write(loginMessage);
+
+	number_of_bytes = write(socket_descriptor, json.c_str(), strlen(json.c_str()));
+
+  	while (TRUE)
+  	{
+    	printf("Enter the message: ");
+    	bzero(buffer, BUFFER_SIZE);
+    	fgets(buffer, BUFFER_SIZE, stdin);
+
+    	number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
+    	if (number_of_bytes != strlen(buffer))
+      	{
+        	fprintf(stderr, "partial/failed write\n");
+        	exit(EXIT_FAILURE);
+    	}
+
+    	number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
+    	if (number_of_bytes == -1)
+      	{
+        	perror("read");
+        	exit(EXIT_FAILURE);
+      	}
+
+    	printf("Received %d bytes: %s\n", number_of_bytes, buffer);
+  	}
 
 	close(socket_descriptor);
 	return 0;
