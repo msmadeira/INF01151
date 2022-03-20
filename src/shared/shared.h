@@ -1,3 +1,7 @@
+#ifndef SHARED_H
+#define SHARED_H
+
+#include "msg_id.h"
 #include <string>
 
 // Booleans
@@ -11,16 +15,16 @@
 
 #define DEFAULT_PROTOCOL 0
 
-#define PORT 4000
 #define PORT_STR "4000"
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 
 // Data Definitions
-enum MsgType
+
+enum ClientMsgType
 {
   Login,
+  ClientMessage,
   Follow,
-  Tweet,
   RequestTweets,
   ConfirmMessageReceived
 };
@@ -28,14 +32,57 @@ enum MsgType
 union ClientMsgPayload
 {
   char username[20];
-  char message[140];
-  int last_tweet;
-  int id;
+  char message[128];
 };
 
-typedef struct ClientMsg
+class ClientMsg
 {
-  MsgType type;
+public:
   int id;
+  ClientMsgType msg_type;
   ClientMsgPayload payload;
-} clientMsg;
+
+  ClientMsg(int id, ClientMsgType msg_type, ClientMsgPayload payload)
+      : id(id), msg_type(msg_type), payload(payload)
+  {
+  }
+
+  std::string serialize();
+};
+
+struct ServerMessageMsg
+{
+  char username[20];
+  char body[128];
+};
+
+enum ServerMsgType
+{
+  LoginSuccess,
+  LoginFail,
+  ServerMessage,
+};
+
+union ServerMsgPayload
+{
+  char empty;
+  ServerMessageMsg message;
+};
+
+class ServerMsg
+{
+public:
+  int id;
+  ServerMsgType msg_type;
+  ServerMsgPayload payload;
+
+  std::string serialize();
+};
+
+bool is_valid_username(std::string username);
+
+bool is_valid_message(std::string message);
+
+bool is_valid_ascii(std::string text);
+
+#endif

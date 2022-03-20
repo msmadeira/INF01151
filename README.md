@@ -26,18 +26,9 @@ Or, after building:
 
 ### Client
 
-`make runcli`
-
-Or, after building:
-
-`./client ADDRESS`
-
-Example:
-
-```
-$ make client
-$ ./client 127.0.0.1
-```
+`make runcli1`
+`make runcli2`
+`make runcli3`
 
 ## Cleaning
 
