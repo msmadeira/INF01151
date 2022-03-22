@@ -69,34 +69,64 @@ public:
 		for (const auto receiver_user_id : sender_user->followed_by)
 		{
 			User *receiver_user = user_manager.get_user_by_user_id(receiver_user_id);
+			if (receiver_user->receiver_address == NULL)
+			{
+				continue; // Hasn't established a listener channel yet.
+			}
 			int msg_id = user_manager.get_next_msg_id(receiver_user_id);
 
 			ServerMsg server_message{msg_id, response_type, payload};
 			string json_encoded = server_message.serialize();
 
-			send_to_client(json_encoded.c_str(), (struct sockaddr *)&(receiver_user->address));
+			send_to_client(json_encoded.c_str(), (struct sockaddr *)&(receiver_user->receiver_address));
 
-			cout << "Recipient: " << receiver_user->username << endl;
+			cout << "Recipient username: " << receiver_user->username << endl;
+			cout << "Recipient address: " << receiver_user->receiver_address->sin_addr.s_addr << endl;
 		}
 		cout << endl;
 	}
 
-	void handle_login(Json::Value messageValue, struct sockaddr_in client_address)
+	void handle_login_receiver(Json::Value messageValue, struct sockaddr_in client_address)
 	{
 		int msg_id;
 		string username = messageValue["username"].asString();
 		ServerMsgType response_type;
 		if (!is_valid_username(username))
 		{
-			cout << "Login failure: " << username << endl;
+			cout << "Login receiver failure: " << username << endl;
 			response_type = ServerMsgType::LoginFail;
 			msg_id = 0;
 		}
 		else
 		{
-			cout << "Login success: " << username << endl;
+			cout << "Login receiver success: " << username << endl;
 			response_type = ServerMsgType::LoginSuccess;
-			int user_id = user_manager.add_or_update_user(username, client_address);
+			int user_id = user_manager.add_or_update_user_receiver_address(username, client_address);
+			msg_id = user_manager.get_next_msg_id(user_id);
+		}
+		cout << endl;
+
+		ServerMsg response{msg_id, response_type};
+		string json_encoded = response.serialize();
+		this->send_to_client(json_encoded.c_str(), (struct sockaddr *)&client_address);
+	}
+
+	void handle_login_sender(Json::Value messageValue, struct sockaddr_in client_address)
+	{
+		int msg_id;
+		string username = messageValue["username"].asString();
+		ServerMsgType response_type;
+		if (!is_valid_username(username))
+		{
+			cout << "Login sender failure: " << username << endl;
+			response_type = ServerMsgType::LoginFail;
+			msg_id = 0;
+		}
+		else
+		{
+			cout << "Login sender success: " << username << endl;
+			response_type = ServerMsgType::LoginSuccess;
+			int user_id = user_manager.add_or_update_user_sender_address(username, client_address);
 			msg_id = user_manager.get_next_msg_id(user_id);
 		}
 		cout << endl;
@@ -124,12 +154,17 @@ public:
 
 		switch (client_msg_type)
 		{
-		case ClientMsgType::Login:
+		case ClientMsgType::LoginReceiver:
 		{
-			this->handle_login(messageValue, client_address);
+			this->handle_login_receiver(messageValue, client_address);
 			break;
 		}
-		case ClientMsgType::ClientMessage:
+		case ClientMsgType::LoginSender:
+		{
+			this->handle_login_sender(messageValue, client_address);
+			break;
+		}
+		case ClientMsgType::ClientSend:
 		{
 			this->handle_message(messageValue, client_address);
 			break;
@@ -138,6 +173,11 @@ public:
 		{
 			this->handle_follow(messageValue, client_address);
 			break;
+		}
+		default:
+		{
+			cout << "Invalid ClientMsgType value received in handle_incoming_datagram(): " << client_msg_type << endl
+				 << endl;
 		}
 		}
 		printf("Received JSON: %s\n", buffer);
