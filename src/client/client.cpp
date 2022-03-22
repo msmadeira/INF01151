@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 		AtomicVecQueue<ClientMsg>{},
 	};
 
-	UserInputManager user_input_manager = {
+	UserInputManager *user_input_manager = new UserInputManager{
 		AtomicVar<UserInput>(
 			UserInput{
 				UserInputType::NoInput})};
@@ -76,28 +76,28 @@ int main(int argc, char *argv[])
 		sender_thread, input_thread;
 	pthread_create(&receiver_thread, NULL, fn_client_listener, &client_receiver);
 	pthread_create(&sender_thread, NULL, fn_client_sender, &client_sender);
-	pthread_create(&input_thread, NULL, fn_user_input, &client_sender);
+	pthread_create(&input_thread, NULL, fn_user_input, user_input_manager);
 
 	MsgIdManager msg_id_manager;
 
 	for (;;)
 	{
 		{ // Handle user input.
-			user_input_manager.user_command.lock();
-			UserInput user_input = user_input_manager.user_command.locked_read();
+			user_input_manager->user_command.lock();
+			UserInput user_input = user_input_manager->user_command.locked_read();
 			switch (user_input.input_type)
 			{
 			case UserInputType::NoInput:
 			{
-				user_input_manager.user_command.unlock();
+				user_input_manager->user_command.unlock();
 				break;
 			}
 			case UserInputType::InputFollow:
 			{
 				char username[20];
 				strcpy(username, user_input.input_data.username);
-				user_input_manager.user_command.locked_write(UserInput{UserInputType::NoInput});
-				user_input_manager.user_command.unlock();
+				user_input_manager->user_command.locked_write(UserInput{UserInputType::NoInput});
+				user_input_manager->user_command.unlock();
 
 				ClientMsgType msg_type = ClientMsgType::Follow;
 				int id = msg_id_manager.nextId();
@@ -114,8 +114,8 @@ int main(int argc, char *argv[])
 			{
 				char message[128];
 				strcpy(message, user_input.input_data.message);
-				user_input_manager.user_command.locked_write(UserInput{UserInputType::NoInput});
-				user_input_manager.user_command.unlock();
+				user_input_manager->user_command.locked_write(UserInput{UserInputType::NoInput});
+				user_input_manager->user_command.unlock();
 
 				ClientMsgType msg_type = ClientMsgType::ClientSend;
 				int id = msg_id_manager.nextId();
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 				cout << "Error while processing user_input.input_type in main()" << endl
 					 << "Invalid value: " << user_input.input_type << endl
 					 << endl;
-				user_input_manager.user_command.unlock();
+				user_input_manager->user_command.unlock();
 			}
 			}
 		}

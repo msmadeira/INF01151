@@ -7,11 +7,14 @@
 #include "atomic.h"
 #include "msg_id.h"
 
+// Compilation flags
+//#define DEBUG
+
 // Booleans
 #define TRUE 1
 #define FALSE 0
 
-// Flags
+// Bitflags
 #define NONE 0
 
 #define ERROR_VALUE -1
