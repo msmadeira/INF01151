@@ -9,8 +9,8 @@ class AtomicVar
 {
 private:
     A val;
-    sem_t reader_queue;
-    sem_t writer_queue;
+    sem_t *reader_queue;
+    sem_t *writer_queue;
     int reader_count = 0;
 
 public:
@@ -43,12 +43,14 @@ public:
 template <typename A>
 AtomicVar<A>::AtomicVar(A init_val) : val(init_val)
 {
-    int returned_value = sem_init(&(this->reader_queue), 1, 1);
+    this->reader_queue = new sem_t{};
+    int returned_value = sem_init(this->reader_queue, 0, 1);
     if (returned_value != 0)
     {
         printf("Initialization of AtomicVar's reader_queue semaphore failed.\n");
     }
-    returned_value = sem_init(&(this->writer_queue), 1, 1);
+    this->writer_queue = new sem_t{};
+    returned_value = sem_init(this->writer_queue, 0, 1);
     if (returned_value != 0)
     {
         printf("Initialization of AtomicVar's writer_queue semaphore failed.\n");
@@ -58,23 +60,23 @@ AtomicVar<A>::AtomicVar(A init_val) : val(init_val)
 template <typename A>
 A AtomicVar<A>::read()
 {
-    sem_wait(&(this->reader_queue));
+    sem_wait(this->reader_queue);
     reader_count++;
     if (reader_count == 1)
     {
-        sem_wait(&(this->writer_queue));
+        sem_wait(this->writer_queue);
     }
-    sem_post(&(this->reader_queue));
+    sem_post(this->reader_queue);
 
     A copied_val = val;
 
-    sem_wait(&(this->reader_queue));
+    sem_wait(this->reader_queue);
     reader_count--;
     if (reader_count == 0)
     {
-        sem_post(&(this->writer_queue));
+        sem_post(this->writer_queue);
     }
-    sem_post(&(this->reader_queue));
+    sem_post(this->reader_queue);
 
     return copied_val;
 }
@@ -82,22 +84,34 @@ A AtomicVar<A>::read()
 template <typename A>
 void AtomicVar<A>::write(A new_val)
 {
-    sem_wait(&(this->writer_queue));
+#ifdef DEBUG
+    printf("AtomicVar<A>::write() pre-sem_wait\n");
+#endif
+    sem_wait(this->writer_queue);
+#ifdef DEBUG
+    printf("AtomicVar<A>::write() pos-sem_wait\n");
+#endif
 
     val = new_val;
 
-    sem_post(&(this->writer_queue));
+#ifdef DEBUG
+    printf("AtomicVar<A>::write() pre-sem_post\n");
+#endif
+    sem_post(this->writer_queue);
+#ifdef DEBUG
+    printf("AtomicVar<A>::write() pos-sem_post\n");
+#endif
 }
 
 template <typename A>
 A AtomicVar<A>::read_and_replace(A new_val)
 {
-    sem_wait(&(this->writer_queue));
+    sem_wait(this->writer_queue);
 
     A copied_val = val;
     val = new_val;
 
-    sem_post(&(this->writer_queue));
+    sem_post(this->writer_queue);
 
     return copied_val;
 }
@@ -105,13 +119,13 @@ A AtomicVar<A>::read_and_replace(A new_val)
 template <typename A>
 void AtomicVar<A>::lock()
 {
-    sem_wait(&(this->writer_queue));
+    sem_wait(this->writer_queue);
 }
 
 template <typename A>
 void AtomicVar<A>::unlock()
 {
-    sem_post(&(this->writer_queue));
+    sem_post(this->writer_queue);
 }
 
 template <typename A>
@@ -157,7 +171,8 @@ template <typename A>
 std::vector<A> AtomicVecQueue<A>::drain()
 {
     sem_wait(&(this->semaphore));
-    std::vector<A> drained_results(vec_queue);
+    std::vector<A> drained_results(this->vec_queue);
+    this->vec_queue.clear();
     sem_post(&(this->semaphore));
     return drained_results;
 }
