@@ -47,7 +47,7 @@ Or, after building:
 - [ ] Tratar CTRL+C (interrupção) ou CTRL+D (fim de arquivo) (Persistir dados e sinalizar o servidor que o usuário está desconectando)
 - [ ] Persistência de dados em caso de falha dos servidor (usuários e relação de seguidores)
 - [ ] Formatar notificação `@user "message" (timestamp)`
-- [ ] Mensagem deve ter até 128 caracteres e aceitar espaços
+- [ ] Mensagem deve aceitar espaços
 
 ## Por último
 - [ ] Adicionar quantidade de caracteres da notificação;
