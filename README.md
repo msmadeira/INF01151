@@ -40,11 +40,11 @@ Or, after building:
 - [ ] Implementar commando SEND no servidor;
 - [ ] Um usuário pode ter até duas sessões simultâneas (servidor recusa novas tentativas) (Quando terminar uma sessão, a outra não deve ser afetada);
 - [ ] Receber todas as notificações no período que esteve offline (caso tenha outra sessão com mesmo nome considera como recebido);
-- [ ] Guardar lista de notificações enviadas para o usuário;
+- [x] Guardar lista de notificações enviadas peloo usuário;
 - [ ] Guardar fila de notificações pendentes para o usuário;
 - [ ] Adicionar timestamp da notificação;
 - [ ] Número de usuários que ainda não receberam uma notificação (Dentro da estrutura da notificação);
-- [ ] Implementação produtor/consumidor no servidor (recebimento e entrega de mensagens para clientes);
+- [x] Implementação produtor/consumidor no servidor (recebimento e entrega de mensagens para clientes);
 - [ ] Tratar CTRL+C (interrupção) ou CTRL+D (fim de arquivo) (Persistir dados e sinalizar o servidor que o usuário está desconectando)
 - [ ] Persistência de dados em caso de falha dos servidor (usuários e relação de seguidores)
 - [ ] Formatar notificação `@user "message" (timestamp)`
