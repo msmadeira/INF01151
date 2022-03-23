@@ -8,81 +8,22 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
+// Multithreading
 #include <pthread.h>
+#include <semaphore.h>
 
 // C++
 #include <iostream>
 
 #include "../libs/jsoncpp/json/json.h"
 #include "../shared/shared.h"
+#include "client_helpers.h"
+#include "client_receiver.h"
+#include "client_sender.h"
+#include "user_input.h"
 
 using namespace std;
-
-void write_from_buffer(int socket_descriptor, const char *buffer)
-{
-	int number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
-	if (number_of_bytes != strlen(buffer))
-	{
-		fprintf(stderr, "partial/failed write\n");
-		exit(EXIT_FAILURE);
-	}
-}
-
-void read_to_buffer(int socket_descriptor, void *buffer)
-{
-	int number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
-	if (number_of_bytes == -1)
-	{
-		perror("read");
-		exit(EXIT_FAILURE);
-	}
-}
-
-struct ReceiverSystem
-{
-	int socket_descriptor;
-};
-
-void *fn_receiver(void *arg)
-{
-	auto receiver_system = static_cast<ReceiverSystem *>(arg);
-	int socket_descriptor = receiver_system->socket_descriptor;
-	char buffer[BUFFER_SIZE];
-	Json::Reader reader;
-	Json::Value messageValue;
-	for (;;)
-	{
-		read_to_buffer(socket_descriptor, buffer);
-
-		bool parseSuccess = reader.parse(buffer, messageValue, false);
-		if (!parseSuccess)
-		{
-			cout << "ERROR parsing message on fn_receiver: " << messageValue << endl;
-			exit(EXIT_FAILURE);
-		}
-		int server_msg_id = messageValue["id"].asInt();
-		ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["type"].asInt());
-		switch (server_msg_type)
-		{
-		case ServerMsgType::ServerMessage:
-		{
-			cout << "Received message: " << endl;
-			string username = messageValue["username"].asString();
-			cout << "From: @" << username << endl;
-			string body = messageValue["body"].asString();
-			cout << "Message: " << body << endl
-				 << endl;
-			break;
-		}
-		default:
-		{
-			cout << "Invalid server message type received on fn_receiver: " << server_msg_type << endl;
-			exit(EXIT_FAILURE);
-			break;
-		}
-		}
-	}
-}
 
 int main(int argc, char *argv[])
 {
@@ -102,197 +43,135 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	struct addrinfo hints;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
-	hints.ai_flags = NONE;			/* For wildcard IP address */
-	hints.ai_protocol = DEFAULT_PROTOCOL;
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
-
-	struct addrinfo *address_candidates;
-	int exit_code = getaddrinfo(argv[2], argv[3], &hints, &address_candidates);
-	if (exit_code != 0)
+	if (argc > 4)
 	{
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(exit_code));
-		exit(EXIT_FAILURE);
+		cout << "WARNING, correct usage: " << argv[0] << " username address port" << endl
+			 << "Extra passed arguments ignored." << endl
+			 << endl;
 	}
 
-	struct addrinfo *server_address;
-	int socket_descriptor;
-	for (server_address = address_candidates; server_address != NULL; server_address = server_address->ai_next)
-	{
-		socket_descriptor = socket(
-			server_address->ai_family,
-			server_address->ai_socktype,
-			server_address->ai_protocol);
-		if (socket_descriptor == -1)
-			continue;
+	string server_address(argv[2]);
+	string server_port(argv[3]);
 
-		if (connect(socket_descriptor, server_address->ai_addr, server_address->ai_addrlen) != -1)
-			break; /* Success */
+	ClientReceiver client_receiver = {
+		&username,
+		&server_address,
+		&server_port,
+		AtomicVecQueue<Json::Value>{},
+	};
 
-		close(socket_descriptor);
-	}
-	freeaddrinfo(address_candidates);
+	ClientSender client_sender = {
+		&username,
+		&server_address,
+		&server_port,
+		AtomicVecQueue<ClientMsg>{},
+	};
 
-	if (server_address == NULL)
-	{ /* No address succeeded */
-		fprintf(stderr, "Could not bind\n");
-		exit(EXIT_FAILURE);
-	}
+	UserInputManager *user_input_manager = new UserInputManager{
+		AtomicVar<UserInput>(
+			UserInput{
+				UserInputType::NoInput})};
+
+	pthread_t receiver_thread,
+		sender_thread, input_thread;
+	pthread_create(&receiver_thread, NULL, fn_client_listener, &client_receiver);
+	pthread_create(&sender_thread, NULL, fn_client_sender, &client_sender);
+	pthread_create(&input_thread, NULL, fn_user_input, user_input_manager);
 
 	MsgIdManager msg_id_manager;
 
-	// buffer[strlen(buffer) - 1] = 0; // Remove new line and ensure termination.
-
-	ClientMsgType msg_type = ClientMsgType::Login;
-	int id = msg_id_manager.nextId();
-	ClientMsgPayload payload;
-	strcpy(payload.username, username.c_str());
-
-	ClientMsg login_request{id, msg_type, payload};
-	string json_encoded = login_request.serialize();
-
-	write_from_buffer(socket_descriptor, json_encoded.c_str());
-
-	read_to_buffer(socket_descriptor, buffer);
-	Json::Reader reader;
-	Json::Value messageValue;
-	bool parseSuccess = reader.parse(buffer, messageValue, false);
-	if (!parseSuccess)
+	for (;;)
 	{
-		cout << "ERROR parsing message while connecting: " << messageValue << endl;
-		exit(EXIT_FAILURE);
-	}
-	int server_msg_id = messageValue["id"].asInt();
-	ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["type"].asInt());
-	switch (server_msg_type)
-	{
-	case ServerMsgType::LoginFail:
-	{
-		printf("Login failure.\n");
-		exit(EXIT_FAILURE);
-		break;
-	}
-	case ServerMsgType::LoginSuccess:
-	{
-		printf("Login successful.\n");
-		break;
-	}
-	default:
-	{
-		cout << "Invalid server message type received while connecting: " << server_msg_type << endl;
-		exit(EXIT_FAILURE);
-		break;
-	}
-	}
-
-	pthread_t receiver;
-	ReceiverSystem receiver_system = {socket_descriptor};
-	pthread_create(&receiver, NULL, fn_receiver, &receiver_system);
-
-	while (TRUE)
-	{
-		cout << endl
-			 << "Type one of the following commands:" << endl;
-		cout << "FOLLOW @username" << endl;
-		cout << "SEND message" << endl;
-		cout << "QUIT" << endl
-			 << endl;
-
-		bzero(buffer, BUFFER_SIZE);
-		fgets(buffer, BUFFER_SIZE, stdin);
-
-		if (strlen(buffer) < 4)
-		{
-			cout << "Malformed command: " << buffer << endl;
-			continue;
-		}
-
-		string buffer_string(buffer);
-		buffer_string.pop_back(); // Remove new line.
-		string command = buffer_string.substr(0, 4);
-
-		if (!command.compare("QUIT"))
-		{
-			exit(EXIT_SUCCESS);
-		}
-
-		if (buffer_string.size() < 6)
-		{
-			cout << "Malformed command: " << buffer_string << endl;
-			continue;
-		}
-
-		if (!command.compare("SEND"))
-		{
-			if (buffer_string[4] != ' ')
+		{ // Handle user input.
+			user_input_manager->user_command.lock();
+			UserInput user_input = user_input_manager->user_command.locked_read();
+			switch (user_input.input_type)
 			{
-				cout << "Malformed command: " << buffer_string << endl;
-				continue;
-			}
-			string message = buffer_string.substr(5);
-			if (!is_valid_message(message))
+			case UserInputType::NoInput:
 			{
-				cout << "Invalid message: " << message << endl;
-				continue;
+				user_input_manager->user_command.unlock();
+				break;
 			}
-
-			ClientMsgType msg_type = ClientMsgType::ClientMessage;
-			int id = msg_id_manager.nextId();
-			ClientMsgPayload payload;
-			strcpy(payload.message, message.c_str());
-
-			ClientMsg message_packet{id, msg_type, payload};
-			string json_encoded = message_packet.serialize();
-
-			write_from_buffer(socket_descriptor, json_encoded.c_str());
-			cout << "Sent message: " << message << endl;
-			continue;
-		}
-
-		if (buffer_string.size() < 9)
-		{
-			cout << "Malformed command: " << buffer_string << endl;
-			continue;
-		}
-
-		command = buffer_string.substr(0, 8);
-		if (!command.compare("FOLLOW @"))
-		{
-			string follow_username = buffer_string.substr(8);
-			if (!is_valid_username(follow_username))
+			case UserInputType::InputFollow:
 			{
-				cout << "Invalid username: " << follow_username << endl;
-				continue;
+				char username[20];
+				strcpy(username, user_input.input_data.username);
+				user_input_manager->user_command.locked_write(UserInput{UserInputType::NoInput});
+				user_input_manager->user_command.unlock();
+
+				ClientMsgType msg_type = ClientMsgType::Follow;
+				int id = msg_id_manager.nextId();
+				ClientMsgPayload payload;
+				strcpy(payload.username, username);
+				ClientMsg follow_request{id, msg_type, payload};
+
+				client_sender.send_queue.push(follow_request);
+				cout << "main() processed InputFollow" << endl
+					 << endl;
+				break;
 			}
+			case UserInputType::InputSend:
+			{
+				char message[128];
+				strcpy(message, user_input.input_data.message);
+				user_input_manager->user_command.locked_write(UserInput{UserInputType::NoInput});
+				user_input_manager->user_command.unlock();
 
-			ClientMsgType msg_type = ClientMsgType::Follow;
-			int id = msg_id_manager.nextId();
-			ClientMsgPayload payload;
-			strcpy(payload.username, follow_username.c_str());
+				ClientMsgType msg_type = ClientMsgType::ClientSend;
+				int id = msg_id_manager.nextId();
+				ClientMsgPayload payload;
+				strcpy(payload.message, message);
+				ClientMsg send_request{id, msg_type, payload};
 
-			ClientMsg message_packet{id, msg_type, payload};
-			string json_encoded = message_packet.serialize();
-
-			write_from_buffer(socket_descriptor, json_encoded.c_str());
-			cout << "Follow requested: " << follow_username << endl;
-			continue;
+				client_sender.send_queue.push(send_request);
+				cout << "main() processed InputSend" << endl
+					 << endl;
+				break;
+			}
+			case UserInputType::InputQuit:
+			{
+				// TO DO: Handle elegant closing-up.
+				exit(EXIT_SUCCESS);
+			}
+			default:
+			{
+				cout << "Error while processing user_input.input_type in main()" << endl
+					 << "Invalid value: " << user_input.input_type << endl
+					 << endl;
+				user_input_manager->user_command.unlock();
+			}
+			}
 		}
+		{ // Handle server input.
+			vector<Json::Value> server_input_queue = client_receiver.receive_queue.drain();
 
-		cout << "Malformed command: " << buffer_string << endl;
-		continue;
-
-		// write_from_buffer(socket_descriptor, buffer);
-
-		// read_to_buffer(socket_descriptor, buffer);
-
-		// printf("Received %d bytes: %s\n", number_of_bytes, buffer);
+			for (const Json::Value message_value : server_input_queue)
+			{
+				int server_msg_id = message_value["id"].asInt();
+				ServerMsgType server_msg_type = static_cast<ServerMsgType>(message_value["type"].asInt());
+				switch (server_msg_type)
+				{
+				case ServerMsgType::ServerMessage:
+				{
+					cout << "Received message: " << endl;
+					string username = message_value["username"].asString();
+					cout << "From: @" << username << endl;
+					string body = message_value["body"].asString();
+					cout << "Message: " << body << endl
+						 << endl;
+					break;
+				}
+				default:
+				{
+					cout << "Invalid server message type received on fn_client_listener: " << server_msg_type << endl;
+					exit(EXIT_FAILURE);
+					break;
+				}
+				}
+			}
+		}
 	}
 
-	close(socket_descriptor);
-	return 0;
+	// close(socket_descriptor);
+	return EXIT_SUCCESS;
 }

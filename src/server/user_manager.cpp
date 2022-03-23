@@ -25,23 +25,43 @@ bool UserManager::address_exists(sockaddr_in address)
     return this->address_to_user_id.find(address) != this->address_to_user_id.end();
 }
 
-int UserManager::add_or_update_user(std::string username, sockaddr_in address)
+int UserManager::add_or_update_user_receiver_address(std::string username, sockaddr_in receiver_address)
 {
     int user_id;
     if (!username_exists(username))
     { // Add
         user_id = nextUserId();
         this->username_to_user_id[username] = user_id;
-        this->address_to_user_id[address] = user_id;
-        this->uid_to_user[user_id] = {user_id, username, address, 0};
+        this->uid_to_user[user_id] = User{user_id, username, 0, NULL, new sockaddr_in(receiver_address)};
     }
     else
     { // Update
         user_id = this->username_to_user_id[username];
-        this->address_to_user_id[address] = user_id;
         User user = this->uid_to_user.at(user_id);
-        user.address = address;
+        user.receiver_address = new sockaddr_in(receiver_address);
+        this->uid_to_user[user_id] = user;
+    }
+    return user_id;
+}
+
+int UserManager::add_or_update_user_sender_address(std::string username, sockaddr_in sender_address)
+{
+    int user_id;
+    if (!username_exists(username))
+    { // Add
+        user_id = nextUserId();
+        this->username_to_user_id[username] = user_id;
+        this->address_to_user_id[sender_address] = user_id;
+        this->uid_to_user[user_id] = User{user_id, username, 0, new sockaddr_in(sender_address), NULL};
+    }
+    else
+    { // Update
+        user_id = this->username_to_user_id[username];
+        this->address_to_user_id[sender_address] = user_id;
+        User user = this->uid_to_user.at(user_id);
+        user.sender_address = new sockaddr_in(sender_address);
         user.last_msg_id = 0;
+        this->uid_to_user[user_id] = user;
     }
     return user_id;
 }
@@ -71,9 +91,13 @@ void UserManager::add_follow(std::string follow_target, sockaddr_in address_sour
 
     int follower_user_id = this->address_to_user_id[address_source];
     int followed_user_id = this->username_to_user_id[follow_target];
-
-    User user = this->uid_to_user.at(follower_user_id);
-    std::vector<int> followed_users = user.followed_users;
+    
+    std::vector<int> followed_users = this->uid_to_user.at(follower_user_id).followed_users;
+    
+    if (follower_user_id == followed_user_id)
+    {
+        return;
+    }
 
     for (const int user_id : followed_users)
     {
@@ -83,11 +107,8 @@ void UserManager::add_follow(std::string follow_target, sockaddr_in address_sour
         }
     };
 
-    followed_users.push_back(followed_user_id);
-
-    user = this->uid_to_user.at(followed_user_id);
-
-    user.followed_by.push_back(follower_user_id);
+    this->uid_to_user.at(follower_user_id).followed_users.push_back(followed_user_id);
+    this->uid_to_user.at(followed_user_id).followed_by.push_back(follower_user_id);
 
     std::cout << "Add follow succeeded." << std::endl
               << "Target: " << follow_target << std::endl
