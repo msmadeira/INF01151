@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 	if (!is_valid_username(username))
 	{
 		cout << username << " is not a valid username." << endl;
-		cout << "Username must be between one and twenty characters long." << endl;
+		cout << "Username must be between four and twenty characters long." << endl;
 		fprintf(stderr, "usage %s username address port\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
