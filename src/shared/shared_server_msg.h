@@ -8,6 +8,8 @@ enum ServerMsgType
     ServerSendCommand,
     FollowCommandFail,
     FollowCommandSuccess,
+    SendCommandFail,
+    SendCommandSuccess,
 };
 
 #endif

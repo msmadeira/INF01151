@@ -19,6 +19,8 @@ std::string ServerMessageData::serialize()
     {
     case ServerMsgType::LoginFail:
     case ServerMsgType::LoginSuccess:
+    case ServerMsgType::SendCommandFail:
+    case ServerMsgType::SendCommandSuccess:
     {
         break; // No payload.
     }

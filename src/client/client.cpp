@@ -189,6 +189,18 @@ int main(int argc, char *argv[])
 						 << endl;
 					break;
 				}
+				case ServerMsgType::SendCommandFail:
+				{
+					cout << "Send command rejected." << endl
+						 << endl;
+					break;
+				}
+				case ServerMsgType::SendCommandSuccess:
+				{
+					cout << "Send command successful: " << endl
+						 << endl;
+					break;
+				}
 				default:
 				{
 #ifdef DEBUG

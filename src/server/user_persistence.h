@@ -23,15 +23,16 @@ struct UserPersistentData
 public:
     user_id_t user_id;
     std::string username;
-    std::vector<int> followed_by;
+    std::vector<user_id_t> followed_by;
+    std::vector<std::string> sent_list;
 };
 
 class UserPersistence
 {
 private:
     UserIdManager user_id_manager;
-    std::unordered_map<int, UserPersistentData> id_to_user;
-    std::unordered_map<std::string, int> username_to_id;
+    std::unordered_map<user_id_t, UserPersistentData> id_to_user;
+    std::unordered_map<std::string, user_id_t> username_to_id;
 
     user_id_t next_user_id();
 
@@ -41,6 +42,8 @@ public:
     user_id_t add_or_update_user(std::string username);
     user_id_t get_user_id_from_username(std::string username);
     void add_follow(user_id_t followed_id, user_id_t follower_id);
+    void add_sent(user_id_t user_id, std::string sent);
+    std::vector<std::string> get_sent(user_id_t user_id);
 };
 
 #endif

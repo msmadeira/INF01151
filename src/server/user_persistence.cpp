@@ -100,3 +100,35 @@ void UserPersistence::add_follow(user_id_t followed_id, user_id_t follower_id)
          << endl;
 #endif
 }
+
+void UserPersistence::add_sent(user_id_t user_id, string sent)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::add_sent failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << "sent: " << sent << endl
+             << endl;
+#endif
+        return;
+    }
+
+    this->id_to_user[user_id].sent_list.push_back(sent);
+}
+
+vector<string> UserPersistence::get_sent(user_id_t user_id)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::get_sent failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+        vector<string> empty_vector;
+        return empty_vector;
+    }
+
+    return this->id_to_user[user_id].sent_list;
+}

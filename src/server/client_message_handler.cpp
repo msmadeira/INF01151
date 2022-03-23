@@ -44,11 +44,35 @@ inline ServerAction *ClientMessageHandler::handle_follow_command(Json::Value mes
         action_data};
 }
 
-/* TO DO
 inline ServerAction *ClientMessageHandler::handle_send_command(Json::Value messageValue, struct sockaddr_in client_address)
 {
+    user_id_t user_id = connection_manager->get_user_id_from_address(client_address);
+    if (user_id == INVALID_USER_ID)
+    {
+        return NULL; // Client not properly logged, no response.
+    }
+
+    string sent = messageValue["send"].asString();
+
+    msg_id_t msg_id = connection_manager->get_next_msg_id(user_id);
+    ServerMsgType response_type;
+
+    if (!is_valid_message(sent))
+    {
+        response_type = ServerMsgType::SendCommandFail;
+    }
+    else
+    {
+        user_persistence->add_sent(user_id, sent);
+        response_type = ServerMsgType::SendCommandSuccess;
+    }
+
+    ServerActionData action_data;
+    action_data.message_user = MessageUserAction{user_id, ServerMessageData{msg_id, response_type}};
+    return new ServerAction{
+        ServerActionType::ActionMessageUser,
+        action_data};
 }
- */
 
 inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue, struct sockaddr_in client_address)
 {
@@ -74,8 +98,6 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
 #endif
     response_type = ServerMsgType::LoginSuccess;
     user_id_t user_id = user_persistence->add_or_update_user(username);
-    // DEBUG
-    // cout << "add_or_update_user -> user_id: " << user_id << endl << endl;
     connection_manager->add_or_update_user_address(user_id, client_address);
     msg_id = connection_manager->get_next_msg_id(user_id);
 
@@ -88,6 +110,11 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
 
 ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value messageValue, struct sockaddr_in client_address)
 {
+#ifdef DEBUG
+    cout << "Received JSON: " << messageValue << endl
+         << endl;
+#endif
+
     int client_msg_id = messageValue["msg_id"].asInt();
     ClientMsgType client_msg_type = static_cast<ClientMsgType>(messageValue["msg_type"].asInt());
 
@@ -99,7 +126,7 @@ ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value message
     }
     case ClientMsgType::ClientSend:
     {
-        return NULL; // this->handle_send_command(messageValue, client_address);
+        return this->handle_send_command(messageValue, client_address);
     }
     case ClientMsgType::Follow:
     {
@@ -114,10 +141,4 @@ ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value message
         return NULL;
     }
     }
-#ifdef DEBUG
-    cout << "Received JSON: " << messageValue << endl
-         << endl;
-#endif
-
-    return NULL; // DEBUG
 }
