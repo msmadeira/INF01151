@@ -51,3 +51,4 @@ Or, after building:
 
 ## Por último
 - [ ] Adicionar quantidade de caracteres da notificação;
+- [ ] Lidar com perda de pacotes;
