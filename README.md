@@ -36,7 +36,7 @@ Or, after building:
 
 ## Tarefas Pendentes
 
-- [ ] Um perfil é uma cadeia de 4 a 20 caracteres (Atualmente é de 1 a 20) (isValidUsername);
+- [X] Um perfil é uma cadeia de 4 a 20 caracteres (Atualmente é de 1 a 20) (isValidUsername);
 - [ ] Um usuário pode ter até duas sessões simultâneas (servidor recusa novas tentativas) (Quando terminar uma sessão, a outra não deve ser afetada);
 - [ ] Receber todas as notificações no período que esteve offline (caso tenha outra sessão com mesmo nome considera como recebido);
 - [ ] Guardar lista de notificações enviadas para o usuário;

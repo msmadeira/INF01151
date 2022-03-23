@@ -4,7 +4,7 @@
 bool is_valid_username(std::string username)
 {
     int len = username.size();
-    if (len < 1 || len > 20)
+    if (len < 4 || len > 20)
     {
         return false;
     }
