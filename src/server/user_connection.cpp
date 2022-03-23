@@ -5,12 +5,12 @@
 
 using namespace std;
 
-int UserConnectionData::next_msg_id()
+msg_id_t UserConnectionData::next_msg_id()
 {
     return ++(this->last_msg_id);
 }
 
-bool UserConnectionManager::user_id_exists(int user_id)
+bool UserConnectionManager::user_id_exists(user_id_t user_id)
 {
     return this->user_id_to_connection_data.find(user_id) != this->user_id_to_connection_data.end();
 }
@@ -20,7 +20,7 @@ bool UserConnectionManager::address_exists(sockaddr_in address)
     return this->address_to_user_id.find(address) != this->address_to_user_id.end();
 }
 
-void UserConnectionManager::add_or_update_user_address(int user_id, sockaddr_in new_address)
+void UserConnectionManager::add_or_update_user_address(user_id_t user_id, sockaddr_in new_address)
 {
     if (!user_id_exists(user_id))
     { // Add whole user.
@@ -44,7 +44,7 @@ void UserConnectionManager::add_or_update_user_address(int user_id, sockaddr_in 
     // Address updated.
 }
 
-int UserConnectionManager::get_next_msg_id(int user_id)
+msg_id_t UserConnectionManager::get_next_msg_id(user_id_t user_id)
 {
     if (!user_id_exists(user_id))
     {
@@ -58,7 +58,7 @@ int UserConnectionManager::get_next_msg_id(int user_id)
     return this->user_id_to_connection_data[user_id].next_msg_id();
 }
 
-sockaddr_in UserConnectionManager::get_address_from_user(int user_id)
+sockaddr_in UserConnectionManager::get_address_from_user(user_id_t user_id)
 {
     if (!user_id_exists(user_id))
     {
@@ -72,7 +72,7 @@ sockaddr_in UserConnectionManager::get_address_from_user(int user_id)
     return this->user_id_to_connection_data[user_id].address;
 }
 
-int UserConnectionManager::get_user_id_from_address(sockaddr_in address)
+user_id_t UserConnectionManager::get_user_id_from_address(sockaddr_in address)
 {
     if (!address_exists(address))
     {

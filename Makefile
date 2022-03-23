@@ -6,8 +6,9 @@ extlibs:
 	g++ -c src/libs/jsoncpp/jsoncpp.cpp -o libs.o
 
 shared:
+	g++ -c src/shared/msg_id.cpp
 	g++ -c src/shared/shared_helpers.cpp
-	g++ -c src/shared/client_msg.cpp
+	g++ -c src/shared/client_message.cpp
 
 server:
 	make extlibs
@@ -21,7 +22,7 @@ server:
 	g++ -c src/server/user_connection.cpp
 	g++ -c src/server/server_receiver.cpp
 	g++ -c src/server/server.cpp
-	g++ -o app_servidor libs.o shared_helpers.o server_message.o client_msg.o server_sender.o hashing.o client_message_handler.o server_broadcast.o user_persistence.o user_connection.o server_receiver.o server.o -lrt -pthread
+	g++ -o app_servidor libs.o msg_id.o shared_helpers.o server_message.o client_message.o server_sender.o hashing.o client_message_handler.o server_broadcast.o user_persistence.o user_connection.o server_receiver.o server.o -lrt -pthread
 	make clean_partial
 
 client:
@@ -33,11 +34,11 @@ client:
 	g++ -c src/client/client_receiver.cpp
 	g++ -c src/client/client_sender.cpp
 	g++ -c src/client/client.cpp
-	g++ -o app_cliente libs.o shared_helpers.o client_msg.o login.o user_input.o client_connection.o client_receiver.o client_sender.o client.o -lrt -pthread
+	g++ -o app_cliente libs.o msg_id.o shared_helpers.o client_message.o login.o user_input.o client_connection.o client_receiver.o client_sender.o client.o -lrt -pthread
 	make clean_partial
 
 clean_partial:
-	rm -f server.o client.o libs.o shared_helpers.o server_message.o client_msg.o server_sender.o client_message_handler.o server_broadcast.o hashing.o login.o user_input.o client_connection.o client_receiver.o client_sender.o user_persistence.o user_connection.o server_receiver.o
+	rm -f server.o client.o libs.o msg_id.o shared_helpers.o server_message.o client_message.o server_sender.o client_message_handler.o server_broadcast.o hashing.o login.o user_input.o client_connection.o client_receiver.o client_sender.o user_persistence.o user_connection.o server_receiver.o
 
 clean:
 	make clean_partial

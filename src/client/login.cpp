@@ -11,11 +11,11 @@ using namespace std;
 
 bool try_login(ClientMsgType msg_type, string *username, socket_t socket_descriptor, char buffer[])
 {
-    int id = 0;
+    msg_id_t msg_id = 0;
     ClientMsgPayload payload;
     strcpy(payload.username, (*username).c_str());
 
-    ClientMsg login_request{id, msg_type, payload};
+    ClientMessageData login_request{msg_id, msg_type, payload};
     string json_encoded = login_request.serialize();
 
     {
@@ -34,7 +34,7 @@ bool try_login(ClientMsgType msg_type, string *username, socket_t socket_descrip
             return false;
         }
 
-        ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["type"].asInt());
+        ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["msg_type"].asInt());
         switch (server_msg_type)
         {
         case ServerMsgType::LoginFail:

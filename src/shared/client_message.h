@@ -1,6 +1,7 @@
 #ifndef CLIENT_MSG_H
 #define CLIENT_MSG_H
 
+#include "msg_id.h"
 #include <string>
 
 enum ClientMsgType
@@ -16,15 +17,15 @@ union ClientMsgPayload
     char message[128];
 };
 
-class ClientMsg
+class ClientMessageData
 {
 public:
-    int id;
+    msg_id_t msg_id;
     ClientMsgType msg_type;
     ClientMsgPayload payload;
 
-    ClientMsg(int id, ClientMsgType msg_type, ClientMsgPayload payload)
-        : id(id), msg_type(msg_type), payload(payload)
+    ClientMessageData(msg_id_t msg_id, ClientMsgType msg_type, ClientMsgPayload payload)
+        : msg_id(msg_id), msg_type(msg_type), payload(payload)
     {
     }
 

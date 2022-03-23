@@ -21,7 +21,7 @@ union ServerMsgPayload
 class ServerMessageData
 {
 public:
-    int id;
+    msg_id_t msg_id;
     ServerMsgType msg_type;
     ServerMsgPayload payload;
 

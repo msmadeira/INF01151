@@ -12,8 +12,8 @@ std::string ServerMessageData::serialize()
     Json::FastWriter fastWriter;
     Json::Value server_message;
 
-    server_message["id"] = this->id;
-    server_message["type"] = this->msg_type;
+    server_message["msg_id"] = this->msg_id;
+    server_message["msg_type"] = this->msg_type;
 
     switch (this->msg_type)
     {

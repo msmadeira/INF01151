@@ -22,8 +22,8 @@ void *fn_client_sender(void *arg)
 
     for (;;)
     {
-        vector<ClientMsg> message_queue = client_sender->send_queue.drain();
-        for (ClientMsg message : message_queue)
+        vector<ClientMessageData> message_queue = client_sender->send_queue.drain();
+        for (ClientMessageData message : message_queue)
         {
             string json_encoded = message.serialize();
             write_from_buffer(socket_descriptor, json_encoded.c_str());

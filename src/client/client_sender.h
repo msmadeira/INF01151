@@ -8,7 +8,7 @@
 struct ClientSender
 {
     ConnectionDetails *connection_details;
-    AtomicVecQueue<ClientMsg> send_queue;
+    AtomicVecQueue<ClientMessageData> send_queue;
 };
 
 void *fn_client_sender(void *arg);

@@ -3,6 +3,7 @@
 
 #include "../shared/shared.h"
 #include "server_message.h"
+#include "user_persistence.h"
 
 enum ServerActionType
 {
@@ -14,7 +15,7 @@ enum ServerActionType
 struct MessageUserAction
 {
 public:
-    int user_id;
+    user_id_t user_id;
     ServerMessageData message;
 };
 

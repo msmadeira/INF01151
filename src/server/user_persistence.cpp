@@ -5,25 +5,35 @@
 
 using namespace std;
 
-int UserPersistence::nextUserId()
+user_id_t UserIdManager::last_user_id()
 {
-    return ++last_user_id;
+    return user_id;
 }
 
-bool UserPersistence::user_id_exists(int user_id)
+user_id_t UserIdManager::next_user_id()
+{
+    return ++user_id;
+}
+
+user_id_t UserPersistence::next_user_id()
+{
+    return this->user_id_manager.next_user_id();
+}
+
+bool UserPersistence::user_id_exists(user_id_t user_id)
 {
     return this->id_to_user.find(user_id) != this->id_to_user.end();
 }
 
-int UserPersistence::add_or_update_user(string username)
+user_id_t UserPersistence::add_or_update_user(string username)
 {
-    int user_id = get_id_from_username(username);
+    user_id_t user_id = get_user_id_from_username(username);
     if (user_id != 0)
     {
         return user_id;
     }
 
-    user_id = nextUserId();
+    user_id = next_user_id();
     UserPersistentData user_data{
         user_id,
         username};
@@ -33,7 +43,7 @@ int UserPersistence::add_or_update_user(string username)
     return user_id;
 }
 
-int UserPersistence::get_id_from_username(string username)
+user_id_t UserPersistence::get_user_id_from_username(string username)
 {
     try
     {
@@ -45,7 +55,7 @@ int UserPersistence::get_id_from_username(string username)
     }
 }
 
-void UserPersistence::add_follow(int followed_id, int follower_id)
+void UserPersistence::add_follow(user_id_t followed_id, user_id_t follower_id)
 {
     if (!user_id_exists(followed_id))
     {
@@ -69,7 +79,7 @@ void UserPersistence::add_follow(int followed_id, int follower_id)
     }
 
     vector<int> *followed_by = &(this->id_to_user[followed_id].followed_by);
-    for (const int user_id : *followed_by)
+    for (const user_id_t user_id : *followed_by)
     {
         if (follower_id == user_id)
         {

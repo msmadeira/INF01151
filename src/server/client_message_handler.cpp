@@ -12,20 +12,20 @@ ClientMessageHandler::ClientMessageHandler(
 
 inline ServerAction *ClientMessageHandler::handle_follow_command(Json::Value messageValue, struct sockaddr_in client_address)
 {
-    int follower_user_id = connection_manager->get_user_id_from_address(client_address);
-    if (follower_user_id == 0)
+    user_id_t follower_user_id = connection_manager->get_user_id_from_address(client_address);
+    if (follower_user_id == INVALID_USER_ID)
     {
         return NULL; // Client not properly logged, no response.
     }
 
     string username = messageValue["username"].asString();
 
-    int msg_id = connection_manager->get_next_msg_id(follower_user_id);
+    msg_id_t msg_id = connection_manager->get_next_msg_id(follower_user_id);
     ServerMsgType response_type;
 
-    int followed_user_id = user_persistence->get_id_from_username(username);
+    user_id_t followed_user_id = user_persistence->get_user_id_from_username(username);
 
-    if (followed_user_id == 0)
+    if (followed_user_id == INVALID_USER_ID)
     {
         response_type = ServerMsgType::FollowCommandFail;
     }
@@ -52,7 +52,7 @@ inline ServerAction *ClientMessageHandler::handle_send_command(Json::Value messa
 
 inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue, struct sockaddr_in client_address)
 {
-    int msg_id;
+    msg_id_t msg_id;
     string username = messageValue["username"].asString();
     ServerMsgType response_type;
     if (!is_valid_username(username))
@@ -73,7 +73,7 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
     cout << endl;
 #endif
     response_type = ServerMsgType::LoginSuccess;
-    int user_id = user_persistence->add_or_update_user(username);
+    user_id_t user_id = user_persistence->add_or_update_user(username);
     // DEBUG
     // cout << "add_or_update_user -> user_id: " << user_id << endl << endl;
     connection_manager->add_or_update_user_address(user_id, client_address);
@@ -88,8 +88,8 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
 
 ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value messageValue, struct sockaddr_in client_address)
 {
-    int client_msg_id = messageValue["id"].asInt();
-    ClientMsgType client_msg_type = static_cast<ClientMsgType>(messageValue["type"].asInt());
+    int client_msg_id = messageValue["msg_id"].asInt();
+    ClientMsgType client_msg_type = static_cast<ClientMsgType>(messageValue["msg_type"].asInt());
 
     switch (client_msg_type)
     {

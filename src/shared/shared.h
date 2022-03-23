@@ -1,11 +1,11 @@
 #ifndef SHARED_H
 #define SHARED_H
 
-#include "shared_helpers.h"
-#include "client_msg.h"
-#include "shared_server_msg.h"
-#include "atomic.h"
 #include "msg_id.h"
+#include "client_message.h"
+#include "shared_server_msg.h"
+#include "shared_helpers.h"
+#include "atomic.h"
 
 // Compilation flags
 #define DEBUG

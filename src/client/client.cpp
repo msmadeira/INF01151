@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
 	ClientSender *client_sender = new ClientSender{
 		connection_details,
-		AtomicVecQueue<ClientMsg>{},
+		AtomicVecQueue<ClientMessageData>{},
 	};
 
 	UserInputManager *user_input_manager = new UserInputManager{
@@ -110,10 +110,10 @@ int main(int argc, char *argv[])
 				user_input_manager->user_command.unlock();
 
 				ClientMsgType msg_type = ClientMsgType::Follow;
-				int id = msg_id_manager.nextId();
+				msg_id_t msg_id = msg_id_manager.next_msg_id();
 				ClientMsgPayload payload;
 				strcpy(payload.username, username);
-				ClientMsg follow_request{id, msg_type, payload};
+				ClientMessageData follow_request{msg_id, msg_type, payload};
 
 				client_sender->send_queue.push(follow_request);
 				cout << "main() processed InputFollow" << endl
@@ -128,10 +128,10 @@ int main(int argc, char *argv[])
 				user_input_manager->user_command.unlock();
 
 				ClientMsgType msg_type = ClientMsgType::ClientSend;
-				int id = msg_id_manager.nextId();
+				msg_id_t msg_id = msg_id_manager.next_msg_id();
 				ClientMsgPayload payload;
 				strcpy(payload.message, message);
-				ClientMsg send_request{id, msg_type, payload};
+				ClientMessageData send_request{msg_id, msg_type, payload};
 
 				client_sender->send_queue.push(send_request);
 				cout << "main() processed InputSend" << endl
@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
 
 			for (const Json::Value message_value : server_messages_input_queue)
 			{
-				int server_msg_id = message_value["id"].asInt();
-				ServerMsgType server_msg_type = static_cast<ServerMsgType>(message_value["type"].asInt());
+				msg_id_t server_msg_id = message_value["msg_id"].asInt();
+				ServerMsgType server_msg_type = static_cast<ServerMsgType>(message_value["msg_type"].asInt());
 				switch (server_msg_type)
 				{
 				case ServerMsgType::ServerSendCommand:

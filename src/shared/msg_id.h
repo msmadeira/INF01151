@@ -1,23 +1,16 @@
 #ifndef MSG_ID_H
 #define MSG_ID_H
 
+typedef int msg_id_t;
+
 class MsgIdManager
 {
 private:
-    int last_id{0};
+    msg_id_t msg_id = 0;
 
 public:
-    MsgIdManager() {}
-
-    int lastId()
-    {
-        return last_id;
-    }
-
-    int nextId()
-    {
-        return ++last_id;
-    }
+    msg_id_t last_msg_id();
+    msg_id_t next_msg_id();
 };
 
 #endif
