@@ -1,16 +1,13 @@
 #ifndef CLIENT_SENDER_H
 #define CLIENT_SENDER_H
 
-#include <string>
 #include <netdb.h>
-#include "client_helpers.h"
+#include "client_connection.h"
 #include "../shared/shared.h"
 
 struct ClientSender
 {
-    std::string *username;
-    std::string *server_address;
-    std::string *server_port;
+    ConnectionDetails *connection_details;
     AtomicVecQueue<ClientMsg> send_queue;
 };
 

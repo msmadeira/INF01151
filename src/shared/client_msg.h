@@ -5,8 +5,7 @@
 
 enum ClientMsgType
 {
-    LoginSender,
-    LoginReceiver,
+    Login,
     ClientSend,
     Follow,
 };

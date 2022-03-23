@@ -1,6 +1,8 @@
 #ifndef SERVER_MSG_H
 #define SERVER_MSG_H
 
+#include "../shared/shared.h"
+#include <netdb.h>
 #include <string>
 
 struct ServerMessageMsg
@@ -9,20 +11,14 @@ struct ServerMessageMsg
     char body[128];
 };
 
-enum ServerMsgType
-{
-    LoginSuccess,
-    LoginFail,
-    ServerMessage,
-};
-
 union ServerMsgPayload
 {
     char empty;
+    char username[20];
     ServerMessageMsg message;
 };
 
-class ServerMsg
+class ServerMessageData
 {
 public:
     int id;
@@ -30,6 +26,13 @@ public:
     ServerMsgPayload payload;
 
     std::string serialize();
+};
+
+struct ServerMessage
+{
+public:
+    sockaddr_in address;
+    ServerMessageData data;
 };
 
 #endif

@@ -4,6 +4,6 @@
 #include "../shared/shared.h"
 #include <string>
 
-bool try_login(ClientMsgType msg_type, std::string *username, int socket_descriptor, char buffer[]);
+bool try_login(ClientMsgType msg_type, std::string *username, socket_t socket_descriptor, char buffer[]);
 
 #endif

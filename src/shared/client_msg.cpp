@@ -12,8 +12,7 @@ std::string ClientMsg::serialize()
 
     switch (this->msg_type)
     {
-    case ClientMsgType::LoginSender:
-    case ClientMsgType::LoginReceiver:
+    case ClientMsgType::Login:
     case ClientMsgType::Follow:
     {
         client_message["username"] = this->payload.username;
