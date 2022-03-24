@@ -45,8 +45,10 @@ int main(int argc, char *argv[])
 
 	UserPersistence *user_persistence = new UserPersistence{};
 	UserConnectionManager *connection_manager = new UserConnectionManager{};
+	NotificationManager *notification_manager = new NotificationManager{user_persistence, connection_manager};
 
-	ClientMessageHandler client_message_handler{user_persistence, connection_manager};
+	ClientMessageHandler client_message_handler{user_persistence, connection_manager, notification_manager};
+	vector<ServerAction> pending_actions;
 
 	for (;;)
 	{
@@ -54,40 +56,44 @@ int main(int argc, char *argv[])
 
 		for (const ValueAddressTuple message_tuple : client_messages_input_queue)
 		{ // Handle incoming client messages.
-			ServerAction *server_action = client_message_handler.handle_incoming_datagram(message_tuple.value, message_tuple.address);
-			if (server_action == NULL)
+
+			client_message_handler.handle_incoming_datagram(&pending_actions, message_tuple.value, message_tuple.address);
+			if (pending_actions.size() == 0)
 			{
 				continue;
 			}
-
-			switch (server_action->action_type)
+			for (const ServerAction server_action : pending_actions)
 			{
-			case ServerActionType::ActionMessageUser:
-			{
-				sockaddr_in address = connection_manager->get_address_from_user(server_action->action_data.message_user.user_id);
-				server_sender->send_queue.push(
-					ServerMessage{
-						address,
-						server_action->action_data.message_user.message});
-				break;
-			}
-			case ServerActionType::ActionMessageAddress:
-			{
-				server_sender->send_queue.push(
-					ServerMessage{
-						server_action->action_data.message_address.address,
-						server_action->action_data.message_address.message});
-				break;
-			}
-			default:
-			{
+				switch (server_action.action_type)
+				{
+				case ServerActionType::ActionMessageUser:
+				{
+					sockaddr_in address = connection_manager->get_address_from_user(server_action.action_data.message_user.user_id);
+					server_sender->send_queue.push(
+						ServerMessage{
+							address,
+							server_action.action_data.message_user.message});
+					break;
+				}
+				case ServerActionType::ActionMessageAddress:
+				{
+					server_sender->send_queue.push(
+						ServerMessage{
+							server_action.action_data.message_address.address,
+							server_action.action_data.message_address.message});
+					break;
+				}
+				default:
+				{
 #ifdef DEBUG
-				cout << "client_message_handler.handle_incoming_datagram() produced invalid action_type: " << server_action->action_type << endl
-					 << endl;
+					cout << "client_message_handler.handle_incoming_datagram() produced invalid action_type: " << server_action.action_type << endl
+						 << endl;
 #endif
-				break;
+					break;
+				}
+				}
 			}
-			}
+			pending_actions.clear();
 		}
 	}
 

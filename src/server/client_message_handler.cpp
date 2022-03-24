@@ -6,16 +6,18 @@ using namespace std;
 
 ClientMessageHandler::ClientMessageHandler(
     UserPersistence *user_persistence,
-    UserConnectionManager *connection_manager)
+    UserConnectionManager *connection_manager,
+    NotificationManager *notification_manager)
     : user_persistence(user_persistence),
-      connection_manager(connection_manager) {}
+      connection_manager(connection_manager),
+      notification_manager(notification_manager) {}
 
-inline ServerAction *ClientMessageHandler::handle_follow_command(Json::Value messageValue, struct sockaddr_in client_address)
+inline void ClientMessageHandler::handle_follow_command(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
     user_id_t follower_user_id = connection_manager->get_user_id_from_address(client_address);
     if (follower_user_id == INVALID_USER_ID)
     {
-        return NULL; // Client not properly logged, no response.
+        return; // Client not properly logged, no response.
     }
 
     string username = messageValue["username"].asString();
@@ -39,17 +41,21 @@ inline ServerAction *ClientMessageHandler::handle_follow_command(Json::Value mes
     strcpy(payload.username, username.c_str());
     ServerActionData action_data;
     action_data.message_user = MessageUserAction{follower_user_id, ServerMessageData{msg_id, response_type, payload}};
-    return new ServerAction{
+    pending_actions->push_back(ServerAction{
         ServerActionType::ActionMessageUser,
-        action_data};
+        action_data});
 }
 
-inline ServerAction *ClientMessageHandler::handle_send_command(Json::Value messageValue, struct sockaddr_in client_address)
+inline void ClientMessageHandler::handle_send_command(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
     user_id_t user_id = connection_manager->get_user_id_from_address(client_address);
     if (user_id == INVALID_USER_ID)
     {
-        return NULL; // Client not properly logged, no response.
+#ifdef DEBUG
+        cout << "ClientMessageHandler::handle_send_command processed for unlogged or disconnected client." << endl
+             << endl;
+#endif
+        return; // Client not properly logged, no response.
     }
 
     string sent = messageValue["send"].asString();
@@ -60,21 +66,50 @@ inline ServerAction *ClientMessageHandler::handle_send_command(Json::Value messa
     if (!is_valid_message(sent))
     {
         response_type = ServerMsgType::SendCommandFail;
+#ifdef DEBUG
+        cout << "ClientMessageHandler::handle_send_command processed invalid message:" << sent << endl
+             << "User id: " << user_id << endl
+             << endl;
+#endif
     }
     else
     {
-        user_persistence->add_sent(user_id, sent);
+        {
+            vector<user_id_t> followers = user_persistence->get_followers(user_id);
+            if (followers.size() > 0)
+            {
+                notification_manager->add_notification(
+                    pending_actions,
+                    user_id,
+                    time(nullptr),
+                    &followers,
+                    &sent);
+                cout << "ClientMessageHandler::handle_send_command processed valid message:" << sent << endl
+                     << "User id: " << user_id << endl
+                     << "Number of followers: " << followers.size() << endl
+                     << endl;
+            }
+#ifdef DEBUG
+            else
+            {
+                cout << "ClientMessageHandler::handle_send_command processed valid message, but for no followers:" << sent << endl
+                     << "User id: " << user_id << endl
+                     << endl;
+            }
+#endif
+        }
         response_type = ServerMsgType::SendCommandSuccess;
     }
 
     ServerActionData action_data;
     action_data.message_user = MessageUserAction{user_id, ServerMessageData{msg_id, response_type}};
-    return new ServerAction{
+
+    pending_actions->push_back(ServerAction{
         ServerActionType::ActionMessageUser,
-        action_data};
+        action_data});
 }
 
-inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue, struct sockaddr_in client_address)
+inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
     msg_id_t msg_id;
     string username = messageValue["username"].asString();
@@ -88,9 +123,10 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
         msg_id = 0;
         ServerActionData action_data;
         action_data.message_address = MessageAddressAction{client_address, ServerMessageData{msg_id, response_type}};
-        return new ServerAction{
+        pending_actions->push_back(ServerAction{
             ServerActionType::ActionMessageAddress,
-            action_data};
+            action_data});
+        return;
     }
 #ifdef DEBUG
     cout << "Login receiver success: " << username << endl;
@@ -103,12 +139,12 @@ inline ServerAction *ClientMessageHandler::handle_login(Json::Value messageValue
 
     ServerActionData action_data;
     action_data.message_user = MessageUserAction{user_id, ServerMessageData{msg_id, response_type}};
-    return new ServerAction{
+    pending_actions->push_back(ServerAction{
         ServerActionType::ActionMessageUser,
-        action_data};
+        action_data});
 }
 
-ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value messageValue, struct sockaddr_in client_address)
+void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
 #ifdef DEBUG
     cout << "Received JSON: " << messageValue << endl
@@ -122,15 +158,19 @@ ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value message
     {
     case ClientMsgType::Login:
     {
-        return this->handle_login(messageValue, client_address);
+
+        this->handle_login(pending_actions, messageValue, client_address);
+        break;
     }
     case ClientMsgType::ClientSend:
     {
-        return this->handle_send_command(messageValue, client_address);
+        this->handle_send_command(pending_actions, messageValue, client_address);
+        break;
     }
     case ClientMsgType::Follow:
     {
-        return this->handle_follow_command(messageValue, client_address);
+        this->handle_follow_command(pending_actions, messageValue, client_address);
+        break;
     }
     default:
     {
@@ -138,7 +178,7 @@ ServerAction *ClientMessageHandler::handle_incoming_datagram(Json::Value message
         cout << "Invalid ClientMsgType value received in handle_incoming_datagram(): " << client_msg_type << endl
              << endl;
 #endif
-        return NULL;
+        break;
     }
     }
 }

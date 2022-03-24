@@ -1,12 +1,14 @@
 #ifndef USER_PERSISTENCE_H
 #define USER_PERSISTENCE_H
 
+// Forward declarations due to circular dependencies.
+class UserPersistence;
+
 #include <unordered_map>
 #include <vector>
 #include <string>
-
-typedef int user_id_t;
-#define INVALID_USER_ID 0
+#include "server_defines.h"
+#include "notification.h"
 
 class UserIdManager
 {
@@ -24,7 +26,8 @@ public:
     user_id_t user_id;
     std::string username;
     std::vector<user_id_t> followed_by;
-    std::vector<std::string> sent_list;
+    std::vector<Notification> notification_list;
+    std::vector<PendingNotification> pending_notifications;
 };
 
 class UserPersistence
@@ -42,8 +45,12 @@ public:
     user_id_t add_or_update_user(std::string username);
     user_id_t get_user_id_from_username(std::string username);
     void add_follow(user_id_t followed_id, user_id_t follower_id);
-    void add_sent(user_id_t user_id, std::string sent);
-    std::vector<std::string> get_sent(user_id_t user_id);
+    void add_notification(user_id_t user_id, Notification notification);
+    std::vector<Notification> get_notifications(user_id_t user_id);
+    std::vector<user_id_t> get_followers(user_id_t user_id);
+    std::string get_username_from_user_id(user_id_t user_id);
+    void add_pending_notification(user_id_t user_id, PendingNotification pending_notification);
+    std::vector<PendingNotification> get_pending_notifications(user_id_t user_id);
 };
 
 #endif

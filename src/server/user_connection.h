@@ -1,6 +1,9 @@
 #ifndef USER_CONNECTION_H
 #define USER_CONNECTION_H
 
+// Forward declarations due to circular dependencies.
+class UserConnectionManager;
+
 #include "../shared/shared.h"
 #include <unordered_map>
 #include "hashing.h"
