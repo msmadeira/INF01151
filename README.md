@@ -52,5 +52,6 @@ Or, after building:
 
 ## Por último
 
+- [ ] Servidor deve ter um produtor e consumidor por cliente;
 - [ ] Adicionar quantidade de caracteres da notificação;
 - [ ] Lidar com perda de pacotes;
