@@ -3,22 +3,25 @@
 #include "../shared/shared.h"
 #include <string>
 #include <string.h>
-#include "client_helpers.h"
+#include "client_connection.h"
 #include "../libs/jsoncpp/json/json.h"
 #include <iostream>
 
 using namespace std;
 
-bool try_login(ClientMsgType msg_type, string *username, int socket_descriptor, char buffer[])
+bool try_login(ClientMsgType msg_type, string *username, socket_t socket_descriptor, char buffer[])
 {
-    int id = 0;
+    msg_id_t msg_id = 0;
     ClientMsgPayload payload;
     strcpy(payload.username, (*username).c_str());
 
-    ClientMsg login_request{id, msg_type, payload};
+    ClientMessageData login_request{msg_id, msg_type, payload};
     string json_encoded = login_request.serialize();
 
     {
+#ifdef DEBUG
+        cout << "Starting login..." << endl;
+#endif
         write_from_buffer(socket_descriptor, json_encoded.c_str());
 
         read_to_buffer(socket_descriptor, buffer);
@@ -31,28 +34,34 @@ bool try_login(ClientMsgType msg_type, string *username, int socket_descriptor, 
             return false;
         }
 
-        ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["type"].asInt());
+        ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["msg_type"].asInt());
         switch (server_msg_type)
         {
         case ServerMsgType::LoginFail:
         {
-            cout << "Login failure for system " << msg_type << endl;
+#ifdef DEBUG
+            cout << "Login failure." << endl;
+#endif
             return false;
             break;
         }
         case ServerMsgType::LoginSuccess:
         {
-            cout << "Login successful for system " << msg_type << endl;
+#ifdef DEBUG
+            cout << "Login successful." << endl;
+#endif
             break;
         }
         default:
         {
+#ifdef DEBUG
             cout << "Invalid server message type received while connecting: " << server_msg_type << endl;
+#endif
             return false;
             break;
         }
         }
-    } // TO DO: Make this block non-blocking and repeating.
+    }
 
     return true;
 }

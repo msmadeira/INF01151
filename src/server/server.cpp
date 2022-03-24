@@ -14,255 +14,81 @@
 
 #include "../shared/shared.h"
 #include "hashing.h"
-#include "user_manager.h"
+#include "server_broadcast.h"
+#include "client_message_handler.h"
+#include "server_receiver.h"
+#include "user_persistence.h"
+#include "user_connection.h"
+#include "server_sender.h"
+#include "server_message.h"
 
 using namespace std;
 
-class ServerManager
-{
-public:
-	int socket_descriptor;
-	MsgIdManager msg_id_manager;
-	UserManager user_manager;
-
-	ServerManager(int socket_descriptor) : socket_descriptor(socket_descriptor){};
-
-	void send_to_client(const char *buffer, struct sockaddr *client_address)
-	{
-		int number_of_bytes = sendto(
-			this->socket_descriptor,
-			buffer,
-			strlen(buffer),
-			NONE,
-			client_address,
-			sizeof(struct sockaddr));
-		if (number_of_bytes < 0)
-			printf("ERROR on sendto");
-	}
-
-	void handle_follow(Json::Value messageValue, struct sockaddr_in client_address)
-	{
-		string username = messageValue["username"].asString();
-		this->user_manager.add_follow(username, client_address);
-	}
-
-	void handle_message(Json::Value messageValue, struct sockaddr_in client_address)
-	{
-		string message = messageValue["message"].asString();
-		if (!is_valid_message(message))
-		{
-			return;
-		}
-
-		auto response_type = ServerMsgType::ServerMessage;
-
-		User *sender_user = user_manager.get_user_by_address(client_address);
-
-		ServerMsgPayload payload;
-		strcpy(payload.message.username, sender_user->username.c_str());
-		strcpy(payload.message.body, message.c_str());
-
-		cout << "Sending message." << endl
-			 << "Sender: " << sender_user->username << endl
-			 << "Message: " << message << endl;
-
-		for (const auto receiver_user_id : sender_user->followed_by)
-		{
-			User *receiver_user = user_manager.get_user_by_user_id(receiver_user_id);
-			if (receiver_user->receiver_address == NULL)
-			{
-				continue; // Hasn't established a listener channel yet.
-			}
-			int msg_id = user_manager.get_next_msg_id(receiver_user_id);
-
-			ServerMsg server_message{msg_id, response_type, payload};
-			string json_encoded = server_message.serialize();
-
-			send_to_client(json_encoded.c_str(), (struct sockaddr *)&(receiver_user->receiver_address));
-
-			cout << "Recipient username: " << receiver_user->username << endl;
-			cout << "Recipient address: " << receiver_user->receiver_address->sin_addr.s_addr << endl;
-		}
-		cout << endl;
-	}
-
-	void handle_login_receiver(Json::Value messageValue, struct sockaddr_in client_address)
-	{
-		int msg_id;
-		string username = messageValue["username"].asString();
-		ServerMsgType response_type;
-		if (!is_valid_username(username))
-		{
-			cout << "Login receiver failure: " << username << endl;
-			response_type = ServerMsgType::LoginFail;
-			msg_id = 0;
-		}
-		else
-		{
-			cout << "Login receiver success: " << username << endl;
-			response_type = ServerMsgType::LoginSuccess;
-			int user_id = user_manager.add_or_update_user_receiver_address(username, client_address);
-			msg_id = user_manager.get_next_msg_id(user_id);
-		}
-		cout << endl;
-
-		ServerMsg response{msg_id, response_type};
-		string json_encoded = response.serialize();
-		this->send_to_client(json_encoded.c_str(), (struct sockaddr *)&client_address);
-	}
-
-	void handle_login_sender(Json::Value messageValue, struct sockaddr_in client_address)
-	{
-		int msg_id;
-		string username = messageValue["username"].asString();
-		ServerMsgType response_type;
-		if (!is_valid_username(username))
-		{
-			cout << "Login sender failure: " << username << endl;
-			response_type = ServerMsgType::LoginFail;
-			msg_id = 0;
-		}
-		else
-		{
-			cout << "Login sender success: " << username << endl;
-			response_type = ServerMsgType::LoginSuccess;
-			int user_id = user_manager.add_or_update_user_sender_address(username, client_address);
-			msg_id = user_manager.get_next_msg_id(user_id);
-		}
-		cout << endl;
-
-		ServerMsg response{msg_id, response_type};
-		string json_encoded = response.serialize();
-		this->send_to_client(json_encoded.c_str(), (struct sockaddr *)&client_address);
-	}
-
-	void handle_incoming_datagram(const char *buffer, struct sockaddr_in client_address)
-	{
-		Json::Reader reader;
-		Json::Value messageValue;
-
-		bool parseSuccess = reader.parse(buffer, messageValue, false);
-
-		if (!parseSuccess)
-		{
-			printf("ERROR parsing message");
-			return;
-		}
-
-		int client_msg_id = messageValue["id"].asInt();
-		ClientMsgType client_msg_type = static_cast<ClientMsgType>(messageValue["type"].asInt());
-
-		switch (client_msg_type)
-		{
-		case ClientMsgType::LoginReceiver:
-		{
-			this->handle_login_receiver(messageValue, client_address);
-			break;
-		}
-		case ClientMsgType::LoginSender:
-		{
-			this->handle_login_sender(messageValue, client_address);
-			break;
-		}
-		case ClientMsgType::ClientSend:
-		{
-			this->handle_message(messageValue, client_address);
-			break;
-		}
-		case ClientMsgType::Follow:
-		{
-			this->handle_follow(messageValue, client_address);
-			break;
-		}
-		default:
-		{
-			cout << "Invalid ClientMsgType value received in handle_incoming_datagram(): " << client_msg_type << endl
-				 << endl;
-		}
-		}
-		printf("Received JSON: %s\n", buffer);
-	}
-};
-
 int main(int argc, char *argv[])
 {
-	struct addrinfo hints;
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;	/* Allow IPv4 or IPv6 */
-	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
-	hints.ai_flags = AI_PASSIVE;	/* For wildcard IP address */
-	hints.ai_protocol = 0;			/* Any protocol */
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
-
-	struct addrinfo *address_candidates;
-	int exit_code = getaddrinfo(NULL, PORT_STR, &hints, &address_candidates);
-	if (exit_code != EXIT_SUCCESS)
+	socket_t socket_descriptor = fn_server_broadcast();
+	if (socket_descriptor == INVALID_SOCKET)
 	{
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(exit_code));
-		exit(EXIT_FAILURE);
+		cout << "Error: Unable to setup server broadcast." << endl
+			 << endl;
+		return EXIT_FAILURE;
 	}
 
-	struct addrinfo *server_address;
-	int socket_descriptor;
-	for (server_address = address_candidates; server_address != NULL; server_address = server_address->ai_next)
-	{
-		socket_descriptor = socket(server_address->ai_family, server_address->ai_socktype, server_address->ai_protocol);
-		if (socket_descriptor == -1)
-			continue;
+	ServerReceiver *server_receiver = new ServerReceiver{socket_descriptor};
+	ServerSender *server_sender = new ServerSender{socket_descriptor};
 
-		if (bind(socket_descriptor, server_address->ai_addr, server_address->ai_addrlen) == 0)
-			break; /* Success */
+	pthread_t receiver_thread;
+	pthread_t sender_thread;
 
-		close(socket_descriptor);
-	}
+	pthread_create(&receiver_thread, NULL, fn_server_listener, server_receiver);
+	pthread_create(&sender_thread, NULL, fn_server_sender, server_sender);
 
-	if (server_address == NULL)
-	{ /* No address succeeded */
-		fprintf(stderr, "Could not bind\n");
-		exit(EXIT_FAILURE);
-	}
-	freeaddrinfo(address_candidates); /* No longer needed */
+	UserPersistence *user_persistence = new UserPersistence{};
+	UserConnectionManager *connection_manager = new UserConnectionManager{};
 
-	char buffer[BUFFER_SIZE];
-	char host[NI_MAXHOST], service[NI_MAXSERV];
-	struct sockaddr_in client_address;
-	socklen_t client_address_struct_size = sizeof(struct sockaddr_storage);
-
-	ServerManager server_manager(socket_descriptor);
+	ClientMessageHandler client_message_handler{user_persistence, connection_manager};
 
 	for (;;)
 	{
-		/* receive from socket */
-		memset(buffer, 0, sizeof(buffer));
-		int number_of_bytes = recvfrom(
-			socket_descriptor,
-			buffer,
-			BUFFER_SIZE,
-			NONE,
-			(struct sockaddr *)&client_address,
-			&client_address_struct_size);
-		if (number_of_bytes < 0)
-			printf("ERROR on recvfrom");
-		printf("Received a datagram: %s\n", buffer);
+		vector<ValueAddressTuple> client_messages_input_queue = server_receiver->receive_queue.drain();
 
-		exit_code = getnameinfo(
-			(struct sockaddr *)&client_address,
-			client_address_struct_size,
-			host,
-			NI_MAXHOST,
-			service,
-			NI_MAXSERV,
-			NI_NUMERICSERV);
-		if (exit_code == EXIT_SUCCESS)
-			printf("Received %d bytes from %s:%s\n", number_of_bytes, host, service);
-		else
-			fprintf(stderr, "getnameinfo: %s\n", gai_strerror(exit_code));
+		for (const ValueAddressTuple message_tuple : client_messages_input_queue)
+		{ // Handle incoming client messages.
+			ServerAction *server_action = client_message_handler.handle_incoming_datagram(message_tuple.value, message_tuple.address);
+			if (server_action == NULL)
+			{
+				continue;
+			}
 
-		server_manager.handle_incoming_datagram(buffer, client_address);
-
-		// send_to_client(socket_descriptor, "Got your message\n", (struct sockaddr *)&client_address);
+			switch (server_action->action_type)
+			{
+			case ServerActionType::ActionMessageUser:
+			{
+				sockaddr_in address = connection_manager->get_address_from_user(server_action->action_data.message_user.user_id);
+				server_sender->send_queue.push(
+					ServerMessage{
+						address,
+						server_action->action_data.message_user.message});
+				break;
+			}
+			case ServerActionType::ActionMessageAddress:
+			{
+				server_sender->send_queue.push(
+					ServerMessage{
+						server_action->action_data.message_address.address,
+						server_action->action_data.message_address.message});
+				break;
+			}
+			default:
+			{
+#ifdef DEBUG
+				cout << "client_message_handler.handle_incoming_datagram() produced invalid action_type: " << server_action->action_type << endl
+					 << endl;
+#endif
+				break;
+			}
+			}
+		}
 	}
 
 	close(socket_descriptor);

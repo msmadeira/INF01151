@@ -1,14 +1,14 @@
 #ifndef SHARED_H
 #define SHARED_H
 
-#include "shared_helpers.h"
-#include "client_msg.h"
-#include "server_msg.h"
-#include "atomic.h"
 #include "msg_id.h"
+#include "client_message.h"
+#include "shared_server_msg.h"
+#include "shared_helpers.h"
+#include "atomic.h"
 
 // Compilation flags
-//#define DEBUG
+#define DEBUG
 
 // Booleans
 #define TRUE 1
@@ -23,5 +23,9 @@
 
 #define PORT_STR "4000"
 #define BUFFER_SIZE 512
+
+// Sockets
+typedef int socket_t;
+#define INVALID_SOCKET -1
 
 #endif

@@ -5,12 +5,11 @@
 #include <netdb.h>
 #include "../libs/jsoncpp/json/json.h"
 #include "../shared/shared.h"
+#include "client_connection.h"
 
 struct ClientReceiver
 {
-    std::string *username;
-    std::string *server_address;
-    std::string *server_port;
+    ConnectionDetails *connection_details;
     AtomicVecQueue<Json::Value> receive_queue;
 };
 

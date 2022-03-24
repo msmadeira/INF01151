@@ -1,19 +1,17 @@
-#include "client_msg.h"
-#include <string>
+#include "client_message.h"
 #include "../libs/jsoncpp/json/json.h"
 
-std::string ClientMsg::serialize()
+std::string ClientMessageData::serialize()
 {
     Json::FastWriter fastWriter;
     Json::Value client_message;
 
-    client_message["id"] = this->id;
-    client_message["type"] = this->msg_type;
+    client_message["msg_id"] = this->msg_id;
+    client_message["msg_type"] = this->msg_type;
 
     switch (this->msg_type)
     {
-    case ClientMsgType::LoginSender:
-    case ClientMsgType::LoginReceiver:
+    case ClientMsgType::Login:
     case ClientMsgType::Follow:
     {
         client_message["username"] = this->payload.username;
@@ -21,7 +19,7 @@ std::string ClientMsg::serialize()
     }
     case ClientMsgType::ClientSend:
     {
-        client_message["message"] = this->payload.message;
+        client_message["send"] = this->payload.message;
         break;
     }
     }
