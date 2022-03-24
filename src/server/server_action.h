@@ -1,6 +1,9 @@
 #ifndef SERVER_ACTION_H
 #define SERVER_ACTION_H
 
+// Forward declarations due to circular dependencies.
+class ServerAction;
+
 #include "../shared/shared.h"
 #include "server_message.h"
 #include "user_persistence.h"

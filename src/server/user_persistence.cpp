@@ -28,7 +28,7 @@ bool UserPersistence::user_id_exists(user_id_t user_id)
 user_id_t UserPersistence::add_or_update_user(string username)
 {
     user_id_t user_id = get_user_id_from_username(username);
-    if (user_id != 0)
+    if (user_id != INVALID_USER_ID)
     {
         return user_id;
     }
@@ -51,7 +51,7 @@ user_id_t UserPersistence::get_user_id_from_username(string username)
     }
     catch (...)
     {
-        return 0; // Not id found for this username.
+        return INVALID_USER_ID; // Not id found for this username.
     }
 }
 
@@ -101,23 +101,27 @@ void UserPersistence::add_follow(user_id_t followed_id, user_id_t follower_id)
 #endif
 }
 
-void UserPersistence::add_sent(user_id_t user_id, string sent)
+void UserPersistence::add_notification(user_id_t user_id, Notification notification)
 {
     if (!user_id_exists(user_id))
     {
 #ifdef DEBUG
-        cout << "UserPersistence::add_sent failed: user_id does not exist." << endl
+        cout << "UserPersistence::add_notification failed: user_id does not exist." << endl
              << "user_id: " << user_id << endl
-             << "sent: " << sent << endl
+             //  << "notification id: " << notification.notification_id << endl
+             //  << "notification author: " << notification.author << endl
+             //  << "timestamp: " << notification.timestamp << endl
+             //  << "notification length: " << notification.message_length << endl
+             //  << "pending users: " << notification.pending_users << endl
              << endl;
 #endif
         return;
     }
 
-    this->id_to_user[user_id].sent_list.push_back(sent);
+    this->id_to_user[user_id].notification_list.push_back(notification);
 }
 
-vector<string> UserPersistence::get_sent(user_id_t user_id)
+vector<Notification> UserPersistence::get_notifications(user_id_t user_id)
 {
     if (!user_id_exists(user_id))
     {
@@ -126,9 +130,69 @@ vector<string> UserPersistence::get_sent(user_id_t user_id)
              << "user_id: " << user_id << endl
              << endl;
 #endif
-        vector<string> empty_vector;
+        vector<Notification> empty_vector;
         return empty_vector;
     }
 
-    return this->id_to_user[user_id].sent_list;
+    return this->id_to_user[user_id].notification_list;
+}
+
+vector<user_id_t> UserPersistence::get_followers(user_id_t user_id)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::get_number_of_followers failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+        vector<user_id_t> empty_vector;
+        return empty_vector;
+    }
+    return this->id_to_user[user_id].followed_by;
+}
+
+string UserPersistence::get_username_from_user_id(user_id_t user_id)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::get_number_of_followers failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+        string empty_string;
+        return empty_string;
+    }
+    return this->id_to_user[user_id].username;
+}
+
+void UserPersistence::add_pending_notification(user_id_t user_id, PendingNotification pending_notification)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::add_pending_notification failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+        return;
+    }
+
+    this->id_to_user[user_id].pending_notifications.push_back(pending_notification);
+}
+
+vector<PendingNotification> UserPersistence::get_pending_notifications(user_id_t user_id)
+{
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::get_pending_notifications failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+        vector<PendingNotification> empty_vector;
+        return empty_vector;
+    }
+    return this->id_to_user[user_id].pending_notifications;
 }
