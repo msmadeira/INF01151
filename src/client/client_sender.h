@@ -7,7 +7,7 @@
 
 struct ClientSender
 {
-    ConnectionDetails *connection_details;
+    ConnectionManager *connection_manager;
     AtomicVecQueue<ClientMessageData> send_queue;
 };
 

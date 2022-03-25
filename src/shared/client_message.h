@@ -6,13 +6,15 @@
 
 enum ClientMsgType
 {
-    Login,
+    ClientLogin,
+    ClientLogout,
     ClientSend,
-    Follow,
+    ClientFollow,
 };
 
 union ClientMsgPayload
 {
+    char empty = '\0'; // Default value.
     char username[20];
     char message[128];
 };

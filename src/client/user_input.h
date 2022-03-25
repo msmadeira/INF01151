@@ -1,6 +1,7 @@
 #ifndef USER_INPUT_H
 #define USER_INPUT_H
 
+#include <signal.h>
 #include <string>
 #include <netdb.h>
 #include "../shared/shared.h"

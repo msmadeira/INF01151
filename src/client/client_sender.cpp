@@ -17,8 +17,7 @@ void *fn_client_sender(void *arg)
     ClientSender *client_sender = static_cast<ClientSender *>(arg);
 
     char buffer[BUFFER_SIZE];
-
-    socket_t socket_descriptor = client_sender->connection_details->socket_descriptor;
+    bool must_terminate = false;
 
     for (;;)
     {
@@ -26,7 +25,17 @@ void *fn_client_sender(void *arg)
         for (ClientMessageData message : message_queue)
         {
             string json_encoded = message.serialize();
-            write_from_buffer(socket_descriptor, json_encoded.c_str());
+            client_sender->connection_manager->write_from_buffer(json_encoded.c_str());
+            if (message.msg_type == ClientMsgType::ClientLogout)
+            {
+                must_terminate = true;
+            }
+        }
+        if (must_terminate)
+        {
+            break;
         }
     }
+
+    pthread_exit(NULL);
 }

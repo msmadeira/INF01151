@@ -9,7 +9,7 @@
 
 struct ClientReceiver
 {
-    ConnectionDetails *connection_details;
+    ConnectionManager *connection_manager;
     AtomicVecQueue<Json::Value> receive_queue;
 };
 

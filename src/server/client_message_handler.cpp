@@ -144,6 +144,24 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
         action_data});
 }
 
+inline void ClientMessageHandler::handle_logout(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
+{
+    if (!connection_manager->address_exists(client_address))
+    {
+
+#ifdef DEBUG
+        cout << "Logout failed, unknown address: " << client_address.sin_addr.s_addr << ":" << client_address.sin_port << endl;
+        cout << endl;
+#endif
+        return;
+    }
+    connection_manager->remove_address(client_address);
+#ifdef DEBUG
+    cout << "Logout receiver success: " << client_address.sin_addr.s_addr << ":" << client_address.sin_port << endl;
+    cout << endl;
+#endif
+}
+
 void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
 #ifdef DEBUG
@@ -156,10 +174,14 @@ void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pendin
 
     switch (client_msg_type)
     {
-    case ClientMsgType::Login:
+    case ClientMsgType::ClientLogin:
     {
-
         this->handle_login(pending_actions, messageValue, client_address);
+        break;
+    }
+    case ClientMsgType::ClientLogout:
+    {
+        this->handle_logout(pending_actions, messageValue, client_address);
         break;
     }
     case ClientMsgType::ClientSend:
@@ -167,7 +189,7 @@ void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pendin
         this->handle_send_command(pending_actions, messageValue, client_address);
         break;
     }
-    case ClientMsgType::Follow:
+    case ClientMsgType::ClientFollow:
     {
         this->handle_follow_command(pending_actions, messageValue, client_address);
         break;

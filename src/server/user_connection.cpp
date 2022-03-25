@@ -44,6 +44,21 @@ void UserConnectionManager::add_or_update_user_address(user_id_t user_id, sockad
     // Address updated.
 }
 
+void UserConnectionManager::remove_address(sockaddr_in address)
+{
+    if (!address_exists(address))
+    {
+#ifdef DEBUG
+        cout << "UserConnectionManager::remove_address() called for non-existent address: " << address.sin_addr.s_addr << ":" << address.sin_port << endl
+             << endl;
+#endif
+        return;
+    }
+    user_id_t user_id = this->address_to_user_id.at(address);
+    user_id_to_connection_data.erase(user_id);
+    address_to_user_id.erase(address);
+}
+
 msg_id_t UserConnectionManager::get_next_msg_id(user_id_t user_id)
 {
     if (!user_id_exists(user_id))

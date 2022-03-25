@@ -4,15 +4,16 @@
 #include "../shared/shared.h"
 #include <string>
 
-struct ConnectionDetails
+class ConnectionManager
 {
+public:
     socket_t socket_descriptor;
+
+    void write_from_buffer(const char *buffer);
+    void read_to_buffer(void *buffer);
+    void close_socket();
 };
 
-ConnectionDetails *connect_to_address_port(std::string server_address, std::string server_port);
-
-void write_from_buffer(socket_t socket_descriptor, const char *buffer);
-
-void read_to_buffer(socket_t socket_descriptor, void *buffer);
+ConnectionManager *connect_to_address_port(std::string server_address, std::string server_port);
 
 #endif

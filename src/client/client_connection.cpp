@@ -11,7 +11,36 @@
 // Multithreading
 #include <semaphore.h>
 
-ConnectionDetails *connect_to_address_port(std::string server_address, std::string server_port)
+void ConnectionManager::write_from_buffer(const char *buffer)
+{
+    int number_of_bytes = write((this->socket_descriptor), buffer, strlen(buffer));
+    if (number_of_bytes != strlen(buffer))
+    {
+#ifdef DEBUG
+        fprintf(stderr, "partial/failed write\n");
+#endif
+        exit(EXIT_FAILURE);
+    }
+}
+
+void ConnectionManager::read_to_buffer(void *buffer)
+{
+    int number_of_bytes = read((this->socket_descriptor), buffer, BUFFER_SIZE);
+    if (number_of_bytes == -1)
+    {
+#ifdef DEBUG
+        perror("read");
+#endif
+        exit(EXIT_FAILURE);
+    }
+}
+
+void ConnectionManager::close_socket()
+{
+    close((this->socket_descriptor));
+}
+
+ConnectionManager *connect_to_address_port(std::string server_address, std::string server_port)
 {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -59,29 +88,5 @@ ConnectionDetails *connect_to_address_port(std::string server_address, std::stri
         return NULL;
     }
 
-    return new ConnectionDetails{socket_descriptor};
-}
-
-void write_from_buffer(socket_t socket_descriptor, const char *buffer)
-{
-    int number_of_bytes = write(socket_descriptor, buffer, strlen(buffer));
-    if (number_of_bytes != strlen(buffer))
-    {
-#ifdef DEBUG
-        fprintf(stderr, "partial/failed write\n");
-#endif
-        exit(EXIT_FAILURE);
-    }
-}
-
-void read_to_buffer(socket_t socket_descriptor, void *buffer)
-{
-    int number_of_bytes = read(socket_descriptor, buffer, BUFFER_SIZE);
-    if (number_of_bytes == -1)
-    {
-#ifdef DEBUG
-        perror("read");
-#endif
-        exit(EXIT_FAILURE);
-    }
+    return new ConnectionManager{socket_descriptor};
 }
