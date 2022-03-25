@@ -11,6 +11,7 @@ struct ClientReceiver
 {
     ConnectionManager *connection_manager;
     AtomicVecQueue<Json::Value> receive_queue;
+    AtomicVar<bool> must_terminate{false};
 };
 
 void *fn_client_listener(void *arg);

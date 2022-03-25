@@ -247,6 +247,9 @@ int main(int argc, char *argv[])
 	}
 
 	{ // Clean-up before leaving.
+		user_input_manager->must_terminate.write(true);
+		client_receiver->must_terminate.write(true);
+
 		ClientMsgType msg_type = ClientMsgType::ClientLogout;
 		msg_id_t msg_id = msg_id_manager.next_msg_id();
 		ClientMsgPayload payload;
@@ -255,9 +258,6 @@ int main(int argc, char *argv[])
 		client_sender->send_queue.push(send_request);
 		pthread_join(input_thread, NULL);
 		pthread_join(sender_thread, NULL);
-
-		// handle receiver_thread termination?
-		// pthread_join(receiver_thread, NULL);
 	}
 
 	connection_manager->close_socket();

@@ -30,5 +30,12 @@ void *fn_client_listener(void *arg)
             pthread_exit(NULL);
         }
         client_receiver->receive_queue.push(messageValue);
+
+        if (client_receiver->must_terminate.read())
+        {
+            break;
+        }
     }
+
+    pthread_exit(NULL);
 }

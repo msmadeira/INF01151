@@ -21,11 +21,19 @@ void *fn_user_input(void *arg)
 
     for (;;)
     {
+        if (user_input_manager->must_terminate.read())
+        {
+            pthread_exit(NULL);
+        }
         print_input_instructions();
 
         if (!getline(cin, buffer))
         { // EoF reached.
             break;
+        }
+        if (user_input_manager->must_terminate.read())
+        {
+            pthread_exit(NULL);
         }
 
         stringstream buffer_stream(buffer);

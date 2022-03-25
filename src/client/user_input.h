@@ -29,6 +29,7 @@ struct UserInput
 struct UserInputManager
 {
     AtomicVar<UserInput> user_command;
+    AtomicVar<bool> must_terminate{false};
 };
 
 void *fn_user_input(void *arg);
