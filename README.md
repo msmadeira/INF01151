@@ -45,7 +45,7 @@ Or, after building:
 - [x] Adicionar timestamp da notificação;
 - [x] Número de usuários que ainda não receberam uma notificação (Dentro da estrutura da notificação);
 - [x] Implementação produtor/consumidor no servidor (recebimento e entrega de mensagens para clientes);
-- [ ] Tratar CTRL+C (interrupção) ou CTRL+D (fim de arquivo) (Persistir dados e sinalizar o servidor que o usuário está desconectando)
+- [x] Tratar CTRL+C (interrupção) ou CTRL+D (fim de arquivo) (Persistir dados e sinalizar o servidor que o usuário está desconectando)
 - [ ] Persistência de dados em caso de falha dos servidor (usuários e relação de seguidores)
 - [ ] Formatar notificação `@user "message" (timestamp)`
 - [ ] Mensagem deve aceitar espaços
