@@ -38,6 +38,7 @@ public:
                  unsigned int message_length,
                  unsigned int pending_users,
                  std::string message);
+    unsigned int decrement_pending_users();
     std::string *get_message();
 };
 
@@ -61,6 +62,8 @@ public:
                           std::vector<user_id_t> *followers,
                           std::string *message);
     Notification *get_notification(notification_id_t notification_id);
+    void remove_notification(notification_id_t notification_id);
+    void decrement_pending_users_from(notification_id_t notification_id);
 };
 
 #endif

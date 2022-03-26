@@ -161,7 +161,7 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
 #endif
                 continue;
             }
-            {
+            { // Send notification.
                 ServerMsgPayload payload;
                 strcpy(payload.message.username, author.c_str());
                 strcpy(payload.message.body, notification->get_message()->c_str());
@@ -177,6 +177,9 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
                     ServerAction{
                         ServerActionType::ActionMessageUser,
                         action_data});
+            }
+            { // Decrement notification.
+                notification_manager->decrement_pending_users_from(pending_notification.notification_id);
             }
         }
     }
