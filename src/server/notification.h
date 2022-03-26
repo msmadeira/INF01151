@@ -38,6 +38,7 @@ public:
                  unsigned int message_length,
                  unsigned int pending_users,
                  std::string message);
+    std::string *get_message();
 };
 
 class NotificationManager

@@ -182,7 +182,7 @@ void UserPersistence::add_pending_notification(user_id_t user_id, PendingNotific
     this->id_to_user[user_id].pending_notifications.push_back(pending_notification);
 }
 
-vector<PendingNotification> UserPersistence::get_pending_notifications(user_id_t user_id)
+vector<PendingNotification> *UserPersistence::get_pending_notifications(user_id_t user_id)
 {
     if (!user_id_exists(user_id))
     {
@@ -191,8 +191,25 @@ vector<PendingNotification> UserPersistence::get_pending_notifications(user_id_t
              << "user_id: " << user_id << endl
              << endl;
 #endif
-        vector<PendingNotification> empty_vector;
-        return empty_vector;
+        return NULL;
     }
-    return this->id_to_user[user_id].pending_notifications;
+    return &(this->id_to_user[user_id].pending_notifications);
+}
+
+vector<PendingNotification> UserPersistence::drain_pending_notifications(user_id_t user_id)
+{
+    vector<PendingNotification> drain_vector;
+    if (!user_id_exists(user_id))
+    {
+#ifdef DEBUG
+        cout << "UserPersistence::get_pending_notifications failed: user_id does not exist." << endl
+             << "user_id: " << user_id << endl
+             << endl;
+#endif
+
+        return drain_vector;
+    }
+    drain_vector = this->id_to_user[user_id].pending_notifications;
+    this->id_to_user[user_id].pending_notifications.clear();
+    return drain_vector;
 }

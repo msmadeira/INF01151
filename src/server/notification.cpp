@@ -21,6 +21,11 @@ Notification::Notification(notification_id_t notification_id,
 {
 }
 
+string *Notification::get_message()
+{
+    return &(this->message);
+}
+
 NotificationManager::NotificationManager(
     UserPersistence *user_persistence, UserConnectionManager *connection_manager)
     : user_persistence(user_persistence), connection_manager(connection_manager){};
