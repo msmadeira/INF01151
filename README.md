@@ -39,7 +39,7 @@ Or, after building:
 - [x] Um perfil é uma cadeia de 4 a 20 caracteres (Atualmente é de 1 a 20) (isValidUsername);
 - [x] Implementar commando SEND no servidor;
 - [ ] Um usuário pode ter até duas sessões simultâneas (servidor recusa novas tentativas) (Quando terminar uma sessão, a outra não deve ser afetada);
-- [ ] Receber todas as notificações no período que esteve offline (caso tenha outra sessão com mesmo nome considera como recebido);
+- [x] Receber todas as notificações no período que esteve offline (caso tenha outra sessão com mesmo nome considera como recebido);
 - [x] Guardar lista de notificações enviadas peloo usuário;
 - [x] Guardar fila de notificações pendentes para o usuário;
 - [x] Adicionar timestamp da notificação;
