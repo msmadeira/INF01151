@@ -11,8 +11,12 @@ std::string ClientMessageData::serialize()
 
     switch (this->msg_type)
     {
-    case ClientMsgType::Login:
-    case ClientMsgType::Follow:
+    case ClientMsgType::ClientLogout:
+    {
+        break; // Empty payload.
+    }
+    case ClientMsgType::ClientLogin:
+    case ClientMsgType::ClientFollow:
     {
         client_message["username"] = this->payload.username;
         break;

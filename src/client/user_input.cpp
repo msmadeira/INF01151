@@ -1,92 +1,100 @@
 #include "user_input.h"
+#include <bits/stdc++.h>
 #include <iostream>
-#include <string.h>
 
 using namespace std;
+
+inline void print_input_instructions()
+{
+    cout << endl
+         << "Type one of the following commands:" << endl;
+    cout << "FOLLOW @username" << endl;
+    cout << "SEND message" << endl;
+    cout << "QUIT" << endl
+         << endl;
+}
 
 void *fn_user_input(void *arg)
 {
     UserInputManager *user_input_manager = static_cast<UserInputManager *>(arg);
-    char buffer[BUFFER_SIZE];
+    string buffer;
 
     for (;;)
     {
-        cout << endl
-             << "Type one of the following commands:" << endl;
-        cout << "FOLLOW @username" << endl;
-        cout << "SEND message" << endl;
-        cout << "QUIT" << endl
-             << endl;
-
-        bzero(buffer, BUFFER_SIZE);
-        fgets(buffer, BUFFER_SIZE, stdin);
-
-        if (strlen(buffer) < 4)
+        if (user_input_manager->must_terminate.read())
         {
-            cout << "Malformed command type 1: " << buffer << endl;
-            continue;
+            pthread_exit(NULL);
         }
+        print_input_instructions();
 
-        string buffer_string(buffer);
-        buffer_string.pop_back(); // Remove new line.
-        string command = buffer_string.substr(0, 4);
-
-        if (!command.compare("QUIT"))
+        if (!getline(cin, buffer))
+        { // EoF reached.
+            break;
+        }
+        if (user_input_manager->must_terminate.read())
         {
-            UserInput user_input = {UserInputType::InputQuit};
-            user_input_manager->user_command.write(user_input);
             pthread_exit(NULL);
         }
 
-        if (buffer_string.size() < 6)
+        stringstream buffer_stream(buffer);
+        string token;
+
+        if (!getline(buffer_stream, token, ' '))
         {
-            cout << "Malformed command type 2: " << buffer_string << endl;
+            cout << "Malformed command: " << buffer << endl;
             continue;
         }
 
-        if (!command.compare("SEND"))
+        if (token == "QUIT")
         {
-            if (buffer_string[4] != ' ')
+            break; // Break and clean-up.
+        }
+
+        if (token == "SEND")
+        {
+            if (!getline(buffer_stream, token))
             {
-                cout << "Malformed command type 3: " << buffer_string << endl;
+                cout << "Malformed command: " << buffer << endl;
                 continue;
             }
-            string message = buffer_string.substr(5);
-            if (!is_valid_message(message))
+            if (!is_valid_message(token))
             {
-                cout << "Invalid message type 4: " << message << endl;
+                cout << "Invalid message, cannot send: " << token << endl;
                 continue;
             }
 
             UserInput user_input = {UserInputType::InputSend};
-            strcpy(user_input.input_data.message, message.c_str());
+            strcpy(user_input.input_data.message, token.c_str());
 
             user_input_manager->user_command.write(user_input);
             continue;
         }
 
-        if (buffer_string.size() < 9)
+        if (token == "FOLLOW")
         {
-            cout << "Malformed command type 5: " << buffer_string << endl;
-            continue;
-        }
-
-        command = buffer_string.substr(0, 8);
-        if (!command.compare("FOLLOW @"))
-        {
-            string follow_username = buffer_string.substr(8);
-            if (!is_valid_username(follow_username))
+            if (!getline(buffer_stream, token) || token[0] != '@')
             {
-                cout << "Invalid username: " << follow_username << endl;
+                cout << "Malformed command: " << buffer << endl;
+                continue;
+            }
+            token = token.substr(1); // Trim starting @.
+            if (!is_valid_username(token))
+            {
+                cout << "Invalid username, cannot follow: " << token << endl;
                 continue;
             }
             UserInput user_input = {UserInputType::InputFollow};
-            strcpy(user_input.input_data.username, follow_username.c_str());
+            strcpy(user_input.input_data.username, token.c_str());
             user_input_manager->user_command.write(user_input);
             continue;
         }
 
-        cout << "Malformed command type 6: " << buffer_string << endl;
+        cout << "Malformed command: " << buffer << endl;
         continue;
     }
+    { // Signal to clean-up.
+        UserInput user_input = {UserInputType::InputQuit};
+        user_input_manager->user_command.write(user_input);
+    }
+    pthread_exit(NULL);
 }

@@ -3,13 +3,12 @@
 #include "../shared/shared.h"
 #include <string>
 #include <string.h>
-#include "client_connection.h"
 #include "../libs/jsoncpp/json/json.h"
 #include <iostream>
 
 using namespace std;
 
-bool try_login(ClientMsgType msg_type, string *username, socket_t socket_descriptor, char buffer[])
+bool try_login(ClientMsgType msg_type, string *username, ConnectionManager *connection_manager, char buffer[])
 {
     msg_id_t msg_id = 0;
     ClientMsgPayload payload;
@@ -22,9 +21,9 @@ bool try_login(ClientMsgType msg_type, string *username, socket_t socket_descrip
 #ifdef DEBUG
         cout << "Starting login..." << endl;
 #endif
-        write_from_buffer(socket_descriptor, json_encoded.c_str());
+        connection_manager->write_from_buffer(json_encoded.c_str());
 
-        read_to_buffer(socket_descriptor, buffer);
+        connection_manager->read_to_buffer(buffer);
         Json::Reader reader;
         Json::Value messageValue;
         bool parseSuccess = reader.parse(buffer, messageValue, false);

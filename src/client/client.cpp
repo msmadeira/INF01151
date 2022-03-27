@@ -2,6 +2,9 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+// Signal interruption
+#include <signal.h>
+
 // C++
 #include <iostream>
 #include <string>
@@ -16,8 +19,16 @@
 
 using namespace std;
 
+volatile sig_atomic_t interruption_flag = FALSE;
+void interruption_treatment(int signal)
+{
+	interruption_flag = TRUE;
+}
+
 int main(int argc, char *argv[])
 {
+	signal(SIGINT, interruption_treatment);
+
 	char buffer[BUFFER_SIZE];
 	if (argc < 4)
 	{
@@ -44,8 +55,8 @@ int main(int argc, char *argv[])
 	string server_address(argv[2]);
 	string server_port(argv[3]);
 
-	ConnectionDetails *connection_details = connect_to_address_port(server_address, server_port);
-	if (connection_details == NULL)
+	ConnectionManager *connection_manager = connect_to_address_port(server_address, server_port);
+	if (connection_manager == NULL)
 	{
 		cout << "Failed to connect to server." << endl
 			 << "Server address: " << server_address << endl
@@ -55,7 +66,7 @@ int main(int argc, char *argv[])
 	}
 
 	{ // Login
-		bool login_success = try_login(ClientMsgType::Login, &username, connection_details->socket_descriptor, buffer);
+		bool login_success = try_login(ClientMsgType::ClientLogin, &username, connection_manager, buffer);
 		if (!login_success)
 		{
 			cout << "Failed to login." << endl
@@ -66,12 +77,12 @@ int main(int argc, char *argv[])
 	}
 
 	ClientReceiver *client_receiver = new ClientReceiver{
-		connection_details,
+		connection_manager,
 		AtomicVecQueue<Json::Value>{},
 	};
 
 	ClientSender *client_sender = new ClientSender{
-		connection_details,
+		connection_manager,
 		AtomicVecQueue<ClientMessageData>{},
 	};
 
@@ -90,8 +101,15 @@ int main(int argc, char *argv[])
 
 	MsgIdManager msg_id_manager;
 
+	bool finish_program = false;
+
 	for (;;)
 	{
+		if (finish_program || interruption_flag)
+		{
+			break; // Break and clean-up.
+		}
+
 		{ // Handle user input.
 			user_input_manager->user_command.lock();
 			UserInput user_input = user_input_manager->user_command.locked_read();
@@ -109,15 +127,17 @@ int main(int argc, char *argv[])
 				user_input_manager->user_command.locked_write(UserInput{UserInputType::NoInput});
 				user_input_manager->user_command.unlock();
 
-				ClientMsgType msg_type = ClientMsgType::Follow;
+				ClientMsgType msg_type = ClientMsgType::ClientFollow;
 				msg_id_t msg_id = msg_id_manager.next_msg_id();
 				ClientMsgPayload payload;
 				strcpy(payload.username, username);
 				ClientMessageData follow_request{msg_id, msg_type, payload};
 
 				client_sender->send_queue.push(follow_request);
+#ifdef DEBUG
 				cout << "main() processed InputFollow" << endl
 					 << endl;
+#endif
 				break;
 			}
 			case UserInputType::InputSend:
@@ -134,20 +154,24 @@ int main(int argc, char *argv[])
 				ClientMessageData send_request{msg_id, msg_type, payload};
 
 				client_sender->send_queue.push(send_request);
+#ifdef DEBUG
 				cout << "main() processed InputSend" << endl
 					 << endl;
+#endif
 				break;
 			}
 			case UserInputType::InputQuit:
 			{
-				// TO DO: Handle elegant closing-up.
-				exit(EXIT_SUCCESS);
+				finish_program = true;
+				break;
 			}
 			default:
 			{
+#ifdef DEBUG
 				cout << "Error while processing user_input.input_type in main()" << endl
 					 << "Invalid value: " << user_input.input_type << endl
 					 << endl;
+#endif
 				user_input_manager->user_command.unlock();
 			}
 			}
@@ -179,26 +203,34 @@ int main(int argc, char *argv[])
 				}
 				case ServerMsgType::FollowCommandFail:
 				{
+#ifdef DEBUG
 					cout << "Follow command rejected for user: " << message_value["username"].asString() << endl
 						 << endl;
+#endif
 					break;
 				}
 				case ServerMsgType::FollowCommandSuccess:
 				{
+#ifdef DEBUG
 					cout << "Follow command successful for user: " << message_value["username"].asString() << endl
 						 << endl;
+#endif
 					break;
 				}
 				case ServerMsgType::SendCommandFail:
 				{
+#ifdef DEBUG
 					cout << "Send command rejected." << endl
 						 << endl;
+#endif
 					break;
 				}
+#ifdef DEBUG
 				case ServerMsgType::SendCommandSuccess:
 				{
 					cout << "Send command successful: " << endl
 						 << endl;
+#endif
 					break;
 				}
 				default:
@@ -206,7 +238,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 					cout << "Invalid server message type received on fn_client_listener: " << server_msg_type << endl;
 #endif
-					exit(EXIT_FAILURE);
+					finish_program = true;
 					break;
 				}
 				}
@@ -214,6 +246,21 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// close(socket_descriptor);
+	{ // Clean-up before leaving.
+		user_input_manager->must_terminate.write(true);
+		client_receiver->must_terminate.write(true);
+
+		ClientMsgType msg_type = ClientMsgType::ClientLogout;
+		msg_id_t msg_id = msg_id_manager.next_msg_id();
+		ClientMsgPayload payload;
+		ClientMessageData send_request{msg_id, msg_type, payload};
+
+		client_sender->send_queue.push(send_request);
+		pthread_join(input_thread, NULL);
+		pthread_join(sender_thread, NULL);
+	}
+
+	connection_manager->close_socket();
+
 	return EXIT_SUCCESS;
 }

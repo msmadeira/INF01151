@@ -21,6 +21,7 @@ public:
     inline void handle_follow_command(std::vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address);
     inline void handle_send_command(std::vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address);
     inline void handle_login(std::vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address);
+    inline void handle_logout(std::vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address);
     void handle_incoming_datagram(std::vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address);
 };
 

@@ -16,14 +16,12 @@ void *fn_client_listener(void *arg)
 
     char buffer[BUFFER_SIZE];
 
-    socket_t socket_descriptor = client_receiver->connection_details->socket_descriptor;
-
     Json::Reader reader;
 
     for (;;)
     {
         Json::Value messageValue;
-        read_to_buffer(socket_descriptor, buffer);
+        client_receiver->connection_manager->read_to_buffer(buffer);
 
         bool parseSuccess = reader.parse(buffer, messageValue, false);
         if (!parseSuccess)
@@ -32,5 +30,12 @@ void *fn_client_listener(void *arg)
             pthread_exit(NULL);
         }
         client_receiver->receive_queue.push(messageValue);
+
+        if (client_receiver->must_terminate.read())
+        {
+            break;
+        }
     }
+
+    pthread_exit(NULL);
 }

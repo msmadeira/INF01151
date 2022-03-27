@@ -1,6 +1,7 @@
 #ifndef USER_INPUT_H
 #define USER_INPUT_H
 
+#include <signal.h>
 #include <string>
 #include <netdb.h>
 #include "../shared/shared.h"
@@ -28,6 +29,7 @@ struct UserInput
 struct UserInputManager
 {
     AtomicVar<UserInput> user_command;
+    AtomicVar<bool> must_terminate{false};
 };
 
 void *fn_user_input(void *arg);

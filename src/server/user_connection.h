@@ -22,13 +22,14 @@ public:
 class UserConnectionManager
 {
 private:
-    std::unordered_map<int, UserConnectionData> user_id_to_connection_data;
-    std::unordered_map<sockaddr_in, int> address_to_user_id;
+    std::unordered_map<user_id_t, UserConnectionData> user_id_to_connection_data;
+    std::unordered_map<sockaddr_in, user_id_t> address_to_user_id;
 
 public:
     bool user_id_exists(user_id_t user_id);
     bool address_exists(sockaddr_in address);
     void add_or_update_user_address(user_id_t user_id, sockaddr_in new_address);
+    void remove_address(sockaddr_in address);
     msg_id_t get_next_msg_id(user_id_t user_id);
     sockaddr_in get_address_from_user(user_id_t user_id);
     user_id_t get_user_id_from_address(sockaddr_in address);

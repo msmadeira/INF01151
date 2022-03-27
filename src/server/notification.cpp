@@ -21,6 +21,20 @@ Notification::Notification(notification_id_t notification_id,
 {
 }
 
+unsigned int Notification::decrement_pending_users()
+{
+    if (this->pending_users == 0)
+    {
+        return 0;
+    }
+    return --pending_users;
+}
+
+string *Notification::get_message()
+{
+    return &(this->message);
+}
+
 NotificationManager::NotificationManager(
     UserPersistence *user_persistence, UserConnectionManager *connection_manager)
     : user_persistence(user_persistence), connection_manager(connection_manager){};
@@ -112,4 +126,27 @@ Notification *NotificationManager::get_notification(notification_id_t notificati
         return NULL;
     }
     return &(this->notification_id_to_notification.at(notification_id));
+}
+
+void NotificationManager::remove_notification(notification_id_t notification_id)
+{
+    if (!notification_exists(notification_id))
+    {
+        return;
+    }
+    notification_id_to_notification.erase(notification_id);
+}
+
+void NotificationManager::decrement_pending_users_from(notification_id_t notification_id)
+{
+    if (!notification_exists(notification_id))
+    {
+        return;
+    }
+    Notification *notification = &(this->notification_id_to_notification.at(notification_id));
+    unsigned int remaining_pendencies = notification->decrement_pending_users();
+    if (remaining_pendencies == 0)
+    {
+        remove_notification(notification_id);
+    }
 }

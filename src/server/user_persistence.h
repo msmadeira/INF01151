@@ -50,7 +50,8 @@ public:
     std::vector<user_id_t> get_followers(user_id_t user_id);
     std::string get_username_from_user_id(user_id_t user_id);
     void add_pending_notification(user_id_t user_id, PendingNotification pending_notification);
-    std::vector<PendingNotification> get_pending_notifications(user_id_t user_id);
+    std::vector<PendingNotification> *get_pending_notifications(user_id_t user_id);
+    std::vector<PendingNotification> drain_pending_notifications(user_id_t user_id);
 };
 
 #endif

@@ -134,6 +134,7 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
 #endif
     response_type = ServerMsgType::LoginSuccess;
     user_id_t user_id = user_persistence->add_or_update_user(username);
+    bool had_no_logged_session = !connection_manager->user_id_exists(user_id);
     connection_manager->add_or_update_user_address(user_id, client_address);
     msg_id = connection_manager->get_next_msg_id(user_id);
 
@@ -142,6 +143,64 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
     pending_actions->push_back(ServerAction{
         ServerActionType::ActionMessageUser,
         action_data});
+
+    if (had_no_logged_session)
+    {
+        for (const PendingNotification pending_notification : user_persistence->drain_pending_notifications(user_id))
+        {
+            string author = user_persistence->get_username_from_user_id(pending_notification.user_id);
+            Notification *notification = notification_manager->get_notification(pending_notification.notification_id);
+            if (notification == NULL)
+            {
+#ifdef DEBUG
+                cout << "Pending notification improperly cleaned." << endl
+                     << "Notification id: " << pending_notification.notification_id << endl
+                     << "Author: " << author << " (id: " << pending_notification.user_id << " )" << endl
+                     << "Receiver: " << username << " (id: " << user_id << " )" << endl;
+                cout << endl;
+#endif
+                continue;
+            }
+            { // Send notification.
+                ServerMsgPayload payload;
+                strcpy(payload.message.username, author.c_str());
+                strcpy(payload.message.body, notification->get_message()->c_str());
+
+                ServerActionData action_data;
+                action_data.message_user = MessageUserAction{
+                    user_id,
+                    ServerMessageData{
+                        this->connection_manager->get_next_msg_id(user_id),
+                        ServerMsgType::ServerSendCommand,
+                        payload}};
+                pending_actions->push_back(
+                    ServerAction{
+                        ServerActionType::ActionMessageUser,
+                        action_data});
+            }
+            { // Decrement notification.
+                notification_manager->decrement_pending_users_from(pending_notification.notification_id);
+            }
+        }
+    }
+}
+
+inline void ClientMessageHandler::handle_logout(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
+{
+    if (!connection_manager->address_exists(client_address))
+    {
+
+#ifdef DEBUG
+        cout << "Logout failed, unknown address: " << client_address.sin_addr.s_addr << ":" << client_address.sin_port << endl;
+        cout << endl;
+#endif
+        return;
+    }
+    connection_manager->remove_address(client_address);
+#ifdef DEBUG
+    cout << "Logout receiver success: " << client_address.sin_addr.s_addr << ":" << client_address.sin_port << endl;
+    cout << endl;
+#endif
 }
 
 void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
@@ -156,10 +215,14 @@ void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pendin
 
     switch (client_msg_type)
     {
-    case ClientMsgType::Login:
+    case ClientMsgType::ClientLogin:
     {
-
         this->handle_login(pending_actions, messageValue, client_address);
+        break;
+    }
+    case ClientMsgType::ClientLogout:
+    {
+        this->handle_logout(pending_actions, messageValue, client_address);
         break;
     }
     case ClientMsgType::ClientSend:
@@ -167,7 +230,7 @@ void ClientMessageHandler::handle_incoming_datagram(vector<ServerAction> *pendin
         this->handle_send_command(pending_actions, messageValue, client_address);
         break;
     }
-    case ClientMsgType::Follow:
+    case ClientMsgType::ClientFollow:
     {
         this->handle_follow_command(pending_actions, messageValue, client_address);
         break;
