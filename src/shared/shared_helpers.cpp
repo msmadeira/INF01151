@@ -27,8 +27,8 @@ bool is_valid_ascii(std::string text)
     {
         switch (c)
         {
-        case 33 ... 126:
-            // Valid range. No special chars and no spaces.
+        case 32 ... 126:
+            // Valid range. No special chars.
             break;
         default:
             return false;
