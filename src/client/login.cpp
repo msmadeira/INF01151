@@ -36,10 +36,26 @@ bool try_login(ClientMsgType msg_type, string *username, ConnectionManager *conn
         ServerMsgType server_msg_type = static_cast<ServerMsgType>(messageValue["msg_type"].asInt());
         switch (server_msg_type)
         {
-        case ServerMsgType::LoginFail:
+        case ServerMsgType::LoginFailInvalidUsername:
         {
 #ifdef DEBUG
-            cout << "Login failure." << endl;
+            cout << "Login failure: invalid username." << endl;
+#endif
+            return false;
+            break;
+        }
+        case ServerMsgType::LoginFailTooManySessions:
+        {
+#ifdef DEBUG
+            cout << "Login failure: too many sessions currently connected, disconnect one and try again." << endl;
+#endif
+            return false;
+            break;
+        }
+        case ServerMsgType::LoginFailAlreadyConnectedToDifferentUser:
+        {
+#ifdef DEBUG
+            cout << "Login failure: this address is already associated to an active session for a different username." << endl;
 #endif
             return false;
             break;

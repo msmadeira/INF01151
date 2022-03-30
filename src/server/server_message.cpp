@@ -17,7 +17,9 @@ std::string ServerMessageData::serialize()
 
     switch (this->msg_type)
     {
-    case ServerMsgType::LoginFail:
+    case ServerMsgType::LoginFailInvalidUsername:
+    case ServerMsgType::LoginFailTooManySessions:
+    case ServerMsgType::LoginFailAlreadyConnectedToDifferentUser:
     case ServerMsgType::LoginSuccess:
     case ServerMsgType::SendCommandFail:
     case ServerMsgType::SendCommandSuccess:

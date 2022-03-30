@@ -111,40 +111,73 @@ inline void ClientMessageHandler::handle_send_command(vector<ServerAction> *pend
 
 inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_actions, Json::Value messageValue, struct sockaddr_in client_address)
 {
-    msg_id_t msg_id;
+    msg_id_t msg_id = 0;
     string username = messageValue["username"].asString();
     ServerMsgType response_type;
     if (!is_valid_username(username))
     {
-#ifdef DEBUG
-        cout << "Login receiver failure: " << username << endl;
-#endif
-        response_type = ServerMsgType::LoginFail;
+        response_type = ServerMsgType::LoginFailInvalidUsername;
         msg_id = 0;
         ServerActionData action_data;
         action_data.message_address = MessageAddressAction{client_address, ServerMessageData{msg_id, response_type}};
         pending_actions->push_back(ServerAction{
             ServerActionType::ActionMessageAddress,
             action_data});
+#ifdef DEBUG
+        cout << "Login receiver failure, invalid username: " << username << endl;
+#endif
         return;
     }
+    user_id_t user_id = user_persistence->add_or_update_user(username);
+
+    bool had_previous_session = connection_manager->user_id_exists(user_id);
+    if (had_previous_session && !connection_manager->session_available(user_id))
+    {
+        response_type = ServerMsgType::LoginFailTooManySessions;
+        ServerActionData action_data;
+        action_data.message_address = MessageAddressAction{client_address, ServerMessageData{msg_id, response_type}};
+        pending_actions->push_back(ServerAction{
+            ServerActionType::ActionMessageAddress,
+            action_data});
+#ifdef DEBUG
+        cout << "Login receiver failure, too many connected sessions: " << username << endl;
+#endif
+        return;
+    }
+    else
+    {
+        user_id_t address_linked_user_id = connection_manager->get_user_id_from_address(client_address);
+        if (address_linked_user_id != INVALID_USER_ID && address_linked_user_id != user_id)
+        {
+            response_type = ServerMsgType::LoginFailAlreadyConnectedToDifferentUser;
+            ServerActionData action_data;
+            action_data.message_address = MessageAddressAction{client_address, ServerMessageData{msg_id, response_type}};
+            pending_actions->push_back(ServerAction{
+                ServerActionType::ActionMessageAddress,
+                action_data});
+#ifdef DEBUG
+            cout << "Login receiver failure, address already associated to a different user: " << username << endl;
+#endif
+            return;
+        }
+    }
+
 #ifdef DEBUG
     cout << "Login receiver success: " << username << endl;
     cout << endl;
 #endif
     response_type = ServerMsgType::LoginSuccess;
-    user_id_t user_id = user_persistence->add_or_update_user(username);
-    bool had_no_logged_session = !connection_manager->user_id_exists(user_id);
+
     connection_manager->add_or_update_user_address(user_id, client_address);
     msg_id = connection_manager->get_next_msg_id(user_id);
 
     ServerActionData action_data;
-    action_data.message_user = MessageUserAction{user_id, ServerMessageData{msg_id, response_type}};
+    action_data.message_address = MessageAddressAction{client_address, ServerMessageData{msg_id, response_type}};
     pending_actions->push_back(ServerAction{
-        ServerActionType::ActionMessageUser,
+        ServerActionType::ActionMessageAddress,
         action_data});
 
-    if (had_no_logged_session)
+    if (!had_previous_session)
     {
         for (const PendingNotification pending_notification : user_persistence->drain_pending_notifications(user_id))
         {

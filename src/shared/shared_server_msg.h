@@ -4,7 +4,9 @@
 enum ServerMsgType
 {
     LoginSuccess,
-    LoginFail,
+    LoginFailInvalidUsername,
+    LoginFailTooManySessions,
+    LoginFailAlreadyConnectedToDifferentUser,
     ServerSendCommand,
     FollowCommandFail,
     FollowCommandSuccess,
