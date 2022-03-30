@@ -17,6 +17,7 @@ inline void print_input_instructions()
 void *fn_user_input(void *arg)
 {
     UserInputManager *user_input_manager = static_cast<UserInputManager *>(arg);
+    string username = user_input_manager->username;
     string buffer;
 
     for (;;)
@@ -81,6 +82,11 @@ void *fn_user_input(void *arg)
             if (!is_valid_username(token))
             {
                 cout << "Invalid username, cannot follow: " << token << endl;
+                continue;
+            }
+            if (token == username)
+            {
+                cout << "Invalid username, cannot follow oneself!" << endl;
                 continue;
             }
             UserInput user_input = {UserInputType::InputFollow};

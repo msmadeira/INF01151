@@ -35,8 +35,16 @@ inline void ClientMessageHandler::handle_follow_command(vector<ServerAction> *pe
     }
     else
     {
-        user_persistence->add_follow(followed_user_id, follower_user_id);
-        response_type = ServerMsgType::FollowCommandSuccess;
+        string followed_username = user_persistence->get_username_from_user_id(followed_user_id);
+        if (followed_username == username)
+        { // Can't follow oneself.
+            response_type = ServerMsgType::FollowCommandFail;
+        }
+        else
+        {
+            user_persistence->add_follow(followed_user_id, follower_user_id);
+            response_type = ServerMsgType::FollowCommandSuccess;
+        }
     }
 
     ServerMsgPayload payload;
