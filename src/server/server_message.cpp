@@ -1,6 +1,6 @@
 #include "server_message.h"
 #include "../libs/jsoncpp/json/json.h"
-
+#include<ctime>
 #ifdef DEBUG
 #include <iostream>
 #endif
@@ -28,6 +28,9 @@ std::string ServerMessageData::serialize()
     {
         server_message["username"] = this->payload.message.username;
         server_message["body"] = this->payload.message.body;
+        time_t t = this->payload.message.timestap;
+        std::string str(std::ctime(&t));
+        server_message["time"] = str;
         break;
     }
 
