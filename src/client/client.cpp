@@ -188,57 +188,36 @@ int main(int argc, char *argv[])
 				{
 				case ServerMsgType::ServerSendCommand:
 				{
-#ifdef DEBUG
 					cout << "Received message: " << endl;
-#endif
 					string username = message_value["username"].asString();
-#ifdef DEBUG
 					cout << "From: @" << username << endl;
-#endif
 					string body = message_value["body"].asString();
-#ifdef DEBUG
-					cout << "Message: " << body << " " << message_value["time"].asString() << endl
-						 << endl;
-#endif
+					cout << "Message: " << body << " " << message_value["time"].asString() << endl << endl;
 					break;
 				}
 				case ServerMsgType::FollowCommandFail:
 				{
-#ifdef DEBUG
-					cout << "Follow command rejected for user: " << message_value["username"].asString() << endl
-						 << endl;
-#endif
+					cout << "Follow command rejected for user: " << message_value["username"].asString() << endl << endl;
 					break;
 				}
 				case ServerMsgType::FollowCommandSuccess:
 				{
-#ifdef DEBUG
-					cout << "Follow command successful for user: " << message_value["username"].asString() << endl
-						 << endl;
-#endif
+					cout << "Follow command successful for user: " << message_value["username"].asString() << endl << endl;
 					break;
 				}
 				case ServerMsgType::SendCommandFail:
 				{
-#ifdef DEBUG
-					cout << "Send command rejected." << endl
-						 << endl;
-#endif
+					cout << "Send command rejected." << endl << endl;
 					break;
 				}
-#ifdef DEBUG
 				case ServerMsgType::SendCommandSuccess:
 				{
-					cout << "Send command successful: " << endl
-						 << endl;
-#endif
+					cout << "Send command successful: " << endl << endl;
 					break;
 				}
 				default:
 				{
-#ifdef DEBUG
 					cout << "Invalid server message type received on fn_client_listener: " << server_msg_type << endl;
-#endif
 					finish_program = true;
 					break;
 				}
