@@ -97,11 +97,23 @@ int main(int argc, char *argv[])
 				{
 				case ServerActionType::ActionMessageUser:
 				{
-					sockaddr_in address = connection_manager->get_address_from_user(server_action.action_data.message_user.user_id);
-					server_sender->send_queue.push(
-						ServerMessage{
-							address,
-							server_action.action_data.message_user.message});
+					tuple<sockaddr_in *, sockaddr_in *> address_tuple = connection_manager->get_address_from_user(server_action.action_data.message_user.user_id);
+					sockaddr_in *session_one = get<0>(address_tuple);
+					sockaddr_in *session_two = get<1>(address_tuple);
+					if (session_one != NULL)
+					{
+						server_sender->send_queue.push(
+							ServerMessage{
+								*session_one,
+								server_action.action_data.message_user.message});
+					}
+					if (session_two != NULL)
+					{
+						server_sender->send_queue.push(
+							ServerMessage{
+								*session_two,
+								server_action.action_data.message_user.message});
+					}
 					break;
 				}
 				case ServerActionType::ActionMessageAddress:

@@ -38,7 +38,7 @@ Or, after building:
 
 - [x] Um perfil é uma cadeia de 4 a 20 caracteres (Atualmente é de 1 a 20) (isValidUsername);
 - [x] Implementar commando SEND no servidor;
-- [ ] Um usuário pode ter até duas sessões simultâneas (servidor recusa novas tentativas) (Quando terminar uma sessão, a outra não deve ser afetada);
+- [x] Um usuário pode ter até duas sessões simultâneas (servidor recusa novas tentativas) (Quando terminar uma sessão, a outra não deve ser afetada);
 - [x] Receber todas as notificações no período que esteve offline (caso tenha outra sessão com mesmo nome considera como recebido);
 - [x] Guardar lista de notificações enviadas peloo usuário;
 - [x] Guardar fila de notificações pendentes para o usuário;
@@ -47,7 +47,7 @@ Or, after building:
 - [x] Implementação produtor/consumidor no servidor (recebimento e entrega de mensagens para clientes);
 - [x] Tratar CTRL+C (interrupção) ou CTRL+D (fim de arquivo) (Persistir dados e sinalizar o servidor que o usuário está desconectando)
 - [x] Persistência de dados em caso de falha dos servidor (usuários e relação de seguidores)
-- [ ] Formatar notificação `@user "message" (timestamp)`
+- [x] Formatar notificação `@user "message" (timestamp)`
 - [x] Mensagem deve aceitar espaços
 - [ ] Usuario nao pode seguir a si mesmo
 
