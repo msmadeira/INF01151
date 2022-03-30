@@ -18,6 +18,10 @@ void *fn_server_listener(void *arg)
 
     for (;;)
     {
+        if (server_receiver->must_terminate.read())
+        {
+            break;
+        }
         /* receive from socket */
         memset(buffer, 0, sizeof(buffer));
         int number_of_bytes = recvfrom(

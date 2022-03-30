@@ -602,3 +602,4 @@ app_cliente
 app_servidor
 .vscode
 .idea/*
+server_data/*

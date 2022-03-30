@@ -19,6 +19,7 @@ struct ServerReceiver
 {
     socket_t socket_descriptor;
     AtomicVecQueue<ValueAddressTuple> receive_queue;
+    AtomicVar<bool> must_terminate = false;
 };
 
 void *fn_server_listener(void *arg);
