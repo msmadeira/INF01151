@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 #endif
 					string body = message_value["body"].asString();
 #ifdef DEBUG
-					cout << "Message: " << body << endl
+					cout << "Message: " << body << " " <<  message_value["time"].asString() << endl
 							 << endl;
 #endif
 					break;

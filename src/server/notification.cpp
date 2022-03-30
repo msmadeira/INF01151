@@ -86,6 +86,7 @@ void NotificationManager::add_notification(vector<ServerAction> *pending_actions
             ServerMsgPayload payload;
             strcpy(payload.message.username, username.c_str());
             strcpy(payload.message.body, message->c_str());
+            payload.message.timestap = timestamp;
 
             ServerActionData action_data;
             action_data.message_user = MessageUserAction{

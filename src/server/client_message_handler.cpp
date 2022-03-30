@@ -1,6 +1,8 @@
 #include "client_message_handler.h"
 #include "server_message.h"
 #include <string>
+#include <chrono>
+#include <ctime> 
 
 using namespace std;
 
@@ -78,10 +80,12 @@ inline void ClientMessageHandler::handle_send_command(vector<ServerAction> *pend
             vector<user_id_t> followers = user_persistence->get_followers(user_id);
             if (followers.size() > 0)
             {
+                auto end = std::chrono::system_clock::now();
+                std::time_t end_time = std::chrono::system_clock::to_time_t(end);
                 notification_manager->add_notification(
                     pending_actions,
                     user_id,
-                    time(nullptr),
+                    end_time,
                     &followers,
                     &sent);
                 cout << "ClientMessageHandler::handle_send_command processed valid message:" << sent << endl

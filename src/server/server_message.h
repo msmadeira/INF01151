@@ -9,6 +9,7 @@ struct ServerMessageMsg
 {
     char username[20];
     char body[128];
+    time_t timestap;
 };
 
 union ServerMsgPayload
