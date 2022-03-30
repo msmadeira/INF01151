@@ -40,6 +40,7 @@ public:
                  std::string message);
     unsigned int decrement_pending_users();
     std::string *get_message();
+    std::time_t get_timestamp();
 };
 
 class NotificationManager

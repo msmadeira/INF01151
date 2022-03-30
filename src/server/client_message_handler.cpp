@@ -2,7 +2,7 @@
 #include "server_message.h"
 #include <string>
 #include <chrono>
-#include <ctime> 
+#include <ctime>
 
 using namespace std;
 
@@ -31,13 +31,23 @@ inline void ClientMessageHandler::handle_follow_command(vector<ServerAction> *pe
 
     if (followed_user_id == INVALID_USER_ID)
     {
+#ifdef DEBUG
+        cout << "Follow message rejected, invalid followed ID." << endl
+             << "Followed username: " << username << endl
+             << endl;
+#endif
         response_type = ServerMsgType::FollowCommandFail;
     }
     else
     {
-        string followed_username = user_persistence->get_username_from_user_id(followed_user_id);
-        if (followed_username == username)
+        string follower_username = user_persistence->get_username_from_user_id(follower_user_id);
+        if (follower_username == username)
         { // Can't follow oneself.
+#ifdef DEBUG
+            cout << "Follow message rejected, cannot follow themselves." << endl
+                 << "Username: " << username << endl
+                 << endl;
+#endif
             response_type = ServerMsgType::FollowCommandFail;
         }
         else
@@ -210,6 +220,7 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
                 ServerMsgPayload payload;
                 strcpy(payload.message.username, author.c_str());
                 strcpy(payload.message.body, notification->get_message()->c_str());
+                payload.message.timestap = notification->get_timestamp();
 
                 ServerActionData action_data;
                 action_data.message_user = MessageUserAction{

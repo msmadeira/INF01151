@@ -35,6 +35,11 @@ string *Notification::get_message()
     return &(this->message);
 }
 
+time_t Notification::get_timestamp()
+{
+    return this->timestamp;
+}
+
 NotificationManager::NotificationManager(
     UserPersistence *user_persistence, UserConnectionManager *connection_manager)
     : user_persistence(user_persistence), connection_manager(connection_manager){};
