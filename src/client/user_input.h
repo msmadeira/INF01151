@@ -28,6 +28,7 @@ struct UserInput
 
 struct UserInputManager
 {
+    std::string username;
     AtomicVar<UserInput> user_command;
     AtomicVar<bool> must_terminate{false};
 };

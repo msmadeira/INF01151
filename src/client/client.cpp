@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
 	if (argc > 4)
 	{
 		cout << "WARNING, correct usage: " << argv[0] << " username address port" << endl
-				 << "Extra passed arguments ignored." << endl
-				 << endl;
+			 << "Extra passed arguments ignored." << endl
+			 << endl;
 	}
 
 	string server_address(argv[2]);
@@ -59,9 +59,9 @@ int main(int argc, char *argv[])
 	if (connection_manager == NULL)
 	{
 		cout << "Failed to connect to server." << endl
-				 << "Server address: " << server_address << endl
-				 << "Server port: " << server_port << endl
-				 << endl;
+			 << "Server address: " << server_address << endl
+			 << "Server port: " << server_port << endl
+			 << endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -70,26 +70,27 @@ int main(int argc, char *argv[])
 		if (!login_success)
 		{
 			cout << "Failed to login." << endl
-					 << "Username: " << username << endl
-					 << endl;
+				 << "Username: " << username << endl
+				 << endl;
 			exit(EXIT_FAILURE);
 		}
 	}
 
 	ClientReceiver *client_receiver = new ClientReceiver{
-			connection_manager,
-			AtomicVecQueue<Json::Value>{},
+		connection_manager,
+		AtomicVecQueue<Json::Value>{},
 	};
 
 	ClientSender *client_sender = new ClientSender{
-			connection_manager,
-			AtomicVecQueue<ClientMessageData>{},
+		connection_manager,
+		AtomicVecQueue<ClientMessageData>{},
 	};
 
 	UserInputManager *user_input_manager = new UserInputManager{
-			AtomicVar<UserInput>(
-					UserInput{
-							UserInputType::NoInput})};
+		username,
+		AtomicVar<UserInput>(
+			UserInput{
+				UserInputType::NoInput})};
 
 	pthread_t receiver_thread;
 	pthread_t sender_thread;
@@ -136,7 +137,7 @@ int main(int argc, char *argv[])
 				client_sender->send_queue.push(follow_request);
 #ifdef DEBUG
 				cout << "main() processed InputFollow" << endl
-						 << endl;
+					 << endl;
 #endif
 				break;
 			}
@@ -156,7 +157,7 @@ int main(int argc, char *argv[])
 				client_sender->send_queue.push(send_request);
 #ifdef DEBUG
 				cout << "main() processed InputSend" << endl
-						 << endl;
+					 << endl;
 #endif
 				break;
 			}
@@ -169,8 +170,8 @@ int main(int argc, char *argv[])
 			{
 #ifdef DEBUG
 				cout << "Error while processing user_input.input_type in main()" << endl
-						 << "Invalid value: " << user_input.input_type << endl
-						 << endl;
+					 << "Invalid value: " << user_input.input_type << endl
+					 << endl;
 #endif
 				user_input_manager->user_command.unlock();
 			}
@@ -196,8 +197,8 @@ int main(int argc, char *argv[])
 #endif
 					string body = message_value["body"].asString();
 #ifdef DEBUG
-					cout << "Message: " << body << " " <<  message_value["time"].asString() << endl
-							 << endl;
+					cout << "Message: " << body << " " << message_value["time"].asString() << endl
+						 << endl;
 #endif
 					break;
 				}
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
 				{
 #ifdef DEBUG
 					cout << "Follow command rejected for user: " << message_value["username"].asString() << endl
-							 << endl;
+						 << endl;
 #endif
 					break;
 				}
@@ -213,7 +214,7 @@ int main(int argc, char *argv[])
 				{
 #ifdef DEBUG
 					cout << "Follow command successful for user: " << message_value["username"].asString() << endl
-							 << endl;
+						 << endl;
 #endif
 					break;
 				}
@@ -221,7 +222,7 @@ int main(int argc, char *argv[])
 				{
 #ifdef DEBUG
 					cout << "Send command rejected." << endl
-							 << endl;
+						 << endl;
 #endif
 					break;
 				}
@@ -229,7 +230,7 @@ int main(int argc, char *argv[])
 				case ServerMsgType::SendCommandSuccess:
 				{
 					cout << "Send command successful: " << endl
-							 << endl;
+						 << endl;
 #endif
 					break;
 				}
