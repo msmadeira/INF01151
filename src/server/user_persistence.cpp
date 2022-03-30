@@ -4,6 +4,11 @@
 
 using namespace std;
 
+UserIdManager::UserIdManager() {}
+
+UserIdManager::UserIdManager(user_id_t starting_user_id)
+    : user_id(starting_user_id) {}
+
 user_id_t UserIdManager::last_user_id()
 {
     return user_id;
@@ -109,6 +114,7 @@ user_id_t UserPersistence::next_user_id()
 UserPersistence::UserPersistence(vector<UserPersistentData> persistent_data_vector, DiskOperationsManagment *disk_managment)
     : disk_managment(disk_managment)
 {
+    user_id_t biggest_user_id = INVALID_USER_ID;
     for (UserPersistentData persistent_data : persistent_data_vector)
     {
         user_id_t user_id = persistent_data.get_user_id();
@@ -116,7 +122,12 @@ UserPersistence::UserPersistence(vector<UserPersistentData> persistent_data_vect
         this->username_to_id[username] = user_id;
         UserData user_data = UserData(persistent_data);
         this->id_to_user[user_id] = user_data;
+        if (user_id > biggest_user_id)
+        {
+            biggest_user_id = user_id;
+        }
     }
+    this->user_id_manager = UserIdManager(biggest_user_id);
 }
 
 bool UserPersistence::user_id_exists(user_id_t user_id)
@@ -191,11 +202,6 @@ void UserPersistence::add_notification(user_id_t user_id, Notification notificat
 #ifdef DEBUG
         cout << "UserPersistence::add_notification failed: user_id does not exist." << endl
              << "user_id: " << user_id << endl
-             //  << "notification id: " << notification.notification_id << endl
-             //  << "notification author: " << notification.author << endl
-             //  << "timestamp: " << notification.timestamp << endl
-             //  << "notification length: " << notification.message_length << endl
-             //  << "pending users: " << notification.pending_users << endl
              << endl;
 #endif
         return;

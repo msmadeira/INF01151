@@ -185,7 +185,8 @@ inline void ClientMessageHandler::handle_login(vector<ServerAction> *pending_act
     }
 
 #ifdef DEBUG
-    cout << "Login receiver success: " << username << endl;
+    cout << "Login successful for username " << username << endl;
+    cout << "User id associated: " << user_id << endl;
     cout << endl;
 #endif
     response_type = ServerMsgType::LoginSuccess;
