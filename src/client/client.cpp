@@ -196,9 +196,14 @@ int main(int argc, char *argv[])
 #endif
 					string body = message_value["body"].asString();
 #ifdef DEBUG
+					int size = message_value["body"].asString().size();
+					cout << "Message Size: " << size << endl;
+#endif
+#ifdef DEBUG
 					cout << "Message: " << body << endl
 							 << endl;
 #endif
+
 					break;
 				}
 				case ServerMsgType::FollowCommandFail:
