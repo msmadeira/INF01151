@@ -49,5 +49,5 @@ Or, after building:
 - [x] Persistência de dados em caso de falha dos servidor (usuários e relação de seguidores)
 - [x] Formatar notificação `@user "message" (timestamp)`
 - [x] Mensagem deve aceitar espaços
-- [ ] Usuario nao pode seguir a si mesmo
+- [x] Usuario nao pode seguir a si mesmo
 - [ ] Remove define debug
