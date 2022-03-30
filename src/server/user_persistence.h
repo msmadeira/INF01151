@@ -18,6 +18,8 @@ private:
     user_id_t user_id = INVALID_USER_ID;
 
 public:
+    UserIdManager();
+    UserIdManager(user_id_t starting_user_id);
     user_id_t last_user_id();
     user_id_t next_user_id();
 };
