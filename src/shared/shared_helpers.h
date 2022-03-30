@@ -7,6 +7,6 @@ bool is_valid_username(std::string username);
 
 bool is_valid_message(std::string message);
 
-bool is_valid_ascii(std::string text);
+bool is_valid_ascii(std::string text, bool allow_space);
 
 #endif
