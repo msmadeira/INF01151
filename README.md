@@ -50,9 +50,4 @@ Or, after building:
 - [x] Formatar notificação `@user "message" (timestamp)`
 - [x] Mensagem deve aceitar espaços
 - [ ] Usuario nao pode seguir a si mesmo
-
-## Por último
-
-- [ ] Servidor deve ter um produtor e consumidor por cliente;
-- [ ] Adicionar quantidade de caracteres da notificação;
-- [ ] Lidar com perda de pacotes;
+- [ ] Remove define debug
