@@ -10,6 +10,7 @@ struct ServerSender
 {
     socket_t socket_descriptor;
     AtomicVecQueue<ServerMessage> send_queue;
+    AtomicVar<bool> must_terminate = false;
 };
 
 void *fn_server_sender(void *arg);

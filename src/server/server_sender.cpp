@@ -33,6 +33,7 @@ void *fn_server_sender(void *arg)
 
     for (;;)
     {
+        bool must_terminate = server_sender->must_terminate.read();
         vector<ServerMessage> message_queue = server_sender->send_queue.drain();
         for (ServerMessage message : message_queue)
         {
@@ -40,5 +41,11 @@ void *fn_server_sender(void *arg)
             string json_encoded = data.serialize();
             send_to_client(json_encoded.c_str(), (struct sockaddr *)&(message.address), socket_descriptor);
         }
+        if (must_terminate)
+        {
+            break;
+        }
     }
+
+    pthread_exit(NULL);
 }
